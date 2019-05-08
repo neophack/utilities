@@ -38,6 +38,8 @@ build_kinetic:
     - cd ..
     - rm -r lcov
     - cd $CI_PROJECT_DIR/..
+  # Clone common
+    - git clone https://github.com/sgermanserrano/common.git
   # Clone messages
     - git clone https://github.com/sgermanserrano/messages.git
   # We first build the entire workspace normally
