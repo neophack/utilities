@@ -59,12 +59,10 @@ build_kinetic:
     - BRANCH_NAME="$(echo $CI_COMMIT_REF_NAME | sed 's/\//_/g')"
     - COVERAGE_FOLDER_NAME="coverage_$BRANCH_NAME"
     - genhtml -p "$PWD" --legend --demangle-cpp lcov.total.filtered -o $COVERAGE_FOLDER_NAME
-    - tar -czvf coverage.tar.gz $COVERAGE_FOLDER_NAME 
-    - ls 
-    - pwd    
+    - tar -czvf coverage.tar.gz $COVERAGE_FOLDER_NAME   
   artifacts:
     paths:
-      - $CI_PROJECT_DIR/coverage.tar.gz
+      - $CI_PROJECT_DIR/../coverage.tar.gz
     expire_in: 48 hrs
   coverage: /\s*lines.*:\s(\d+\.\d+\%\s\(\d+\sof\s\d+.*\))/
     
