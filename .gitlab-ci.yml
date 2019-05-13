@@ -104,7 +104,6 @@ build_cross:
                     -DCMAKE_FIND_ROOT_PATH=${AUTOWARE_INSTALL_PATH}
                   "
                   '
-  retry: 1
 
 pages:
   stage: deploy
