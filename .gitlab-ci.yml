@@ -60,7 +60,8 @@ build_kinetic:
     - COVERAGE_FOLDER_NAME="coverage_$BRANCH_NAME"
     - genhtml -p "$PWD" --legend --demangle-cpp lcov.total.filtered -o $COVERAGE_FOLDER_NAME
     - tar -czvf coverage.tar.gz $COVERAGE_FOLDER_NAME 
-  retry: 1
+    - ls 
+    - pwd    
   artifacts:
     paths:
       - $CI_PROJECT_DIR/coverage.tar.gz
