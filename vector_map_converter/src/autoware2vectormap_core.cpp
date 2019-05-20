@@ -487,16 +487,16 @@ void createDTLanes(const autoware_map::AutowareMapHandler &awmap,
   //create lookup table:
   // key = waypoint_relation
   // value = lnid;
-  std::unordered_map<uint_pair, unsigned int, boost::hash<uint_pair> > wp_relation2lnid;
-  unsigned int id = 1;
+  std::unordered_map<uint_pair, unsigned int, boost::hash<uint_pair> > wp_relation2vectorindex;
+  unsigned int idx = 0;
   for ( auto r : awmap_waypoint_relations )
   {
     auto key = std::make_pair(r.waypoint_id,r.next_waypoint_id);
-    wp_relation2lnid[key] = id;
-    id++;
+    wp_relation2vectorindex[key] = idx;
+    idx++;
   }
-
-  id = 1;
+  
+  unsigned int id = 1;
   for ( auto awmap_waypoint_relation : awmap_waypoint_relations )
   {
     if(id % 1000 == 0)
@@ -527,8 +527,8 @@ void createDTLanes(const autoware_map::AutowareMapHandler &awmap,
     vmap_lane.lnid = id;
     vmap_lane.did = id;
 
-    std::vector<int> merging_idx = findMergingIdx(awmap_waypoint.getStdWaypointRelations(), awmap_waypoint.waypoint_id, wp_relation2lnid);
-    std::vector<int> branching_idx = findBranchingIdx(awmap_next_waypoint.getStdWaypointRelations(), awmap_next_waypoint.waypoint_id,wp_relation2lnid);
+    std::vector<int> merging_idx = findMergingIdx(awmap_waypoint.getStdWaypointRelations(), awmap_waypoint.waypoint_id, wp_relation2vectorindex);
+    std::vector<int> branching_idx = findBranchingIdx(awmap_next_waypoint.getStdWaypointRelations(), awmap_next_waypoint.waypoint_id,wp_relation2vectorindex);
     // //change order of branch/merge lanes according to blinkers. (staright < left turn < right turn)
     vmap_lane.jct = getJunctionType(awmap_waypoint_relations, branching_idx, merging_idx);
     vmap_lane.blid = 0;
