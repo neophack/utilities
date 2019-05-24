@@ -17,12 +17,13 @@
 #include <unordered_map>
 #include <boost/functional/hash.hpp>
 #include <vector_map/vector_map.h>
+#include <amathutils_lib/amathutils.hpp>
 template <class T>
 void write(std::ofstream &ofs, std::vector<T> objs)
 {
   for( auto obj : objs)
   {
-    ofs << obj << std::endl;
+    ofs << std::fixed << obj << std::endl;
   }
 }
 
@@ -364,7 +365,7 @@ void createNodes(const autoware_map::AutowareMapHandler &awmap, std::vector<vect
   {
     vector_map_msgs::Node vmap_node;
     vmap_node.nid = awmap_wp.waypoint_id;
-    vmap_node.pid = awmap_wp.waypoint_id;
+    vmap_node.pid = awmap_wp.point_id;
     vmap_nodes.push_back(vmap_node);
   }
 }
@@ -387,7 +388,7 @@ std::vector<int> findMergingIdx(const std::vector<autoware_map::WaypointRelation
 
   for(const auto &r : relation)
   {
-    if(r.waypoint_id == merged_index)
+    if(r.next_waypoint_id == merged_index)
     {
       auto key = std::make_pair(r.waypoint_id, r.next_waypoint_id);
       merging_indices.push_back(lookup_table.at(key));
@@ -397,18 +398,18 @@ std::vector<int> findMergingIdx(const std::vector<autoware_map::WaypointRelation
 }
 
 int getJunctionType(const std::vector<autoware_map::WaypointRelation> &awmap_waypoint_relations,
-                    std::vector<int> branching_idx,
-                    std::vector<int> merging_idx)
+                    std::vector<int> branching_indices,
+                    std::vector<int> merging_indices)
 {
-  if(branching_idx.size() <= 1 && merging_idx.size() <= 1 )
+  if(branching_indices.size() <= 1 && merging_indices.size() <= 1 )
   {
     return vector_map_msgs::Lane::NORMAL;
   }
 
-  // if(merging_idx.size() > 1) return vector_map_msgs::Lane::RIGHT_MERGING;
+  // if(merging_indices.size() > 1) return vector_map_msgs::Lane::RIGHT_MERGING;
   // else         return vector_map_msgs::Lane::NORMAL;
-  sort(merging_idx.begin(), merging_idx.end(), [&](const int x, const int y){ return awmap_waypoint_relations.at(x).blinker < awmap_waypoint_relations.at(y).blinker; });
-  sort(branching_idx.begin(), branching_idx.end(), [&](const int x, const int y){ return awmap_waypoint_relations.at(x).blinker < awmap_waypoint_relations.at(y).blinker; });
+  sort(merging_indices.begin(), merging_indices.end(), [&](const int x, const int y){ return awmap_waypoint_relations.at(x).blinker < awmap_waypoint_relations.at(y).blinker; });
+  sort(branching_indices.begin(), branching_indices.end(), [&](const int x, const int y){ return awmap_waypoint_relations.at(x).blinker < awmap_waypoint_relations.at(y).blinker; });
 
   int left_branching_cnt = 0;
   int right_branching_cnt = 0;
@@ -417,7 +418,7 @@ int getJunctionType(const std::vector<autoware_map::WaypointRelation> &awmap_way
   int right_merging_cnt = 0;
   int straight_merging_cnt = 0;
 
-  for(auto idx : branching_idx)
+  for(auto idx : branching_indices)
   {
     if( awmap_waypoint_relations.at(idx).blinker == 1 )
     {
@@ -430,7 +431,7 @@ int getJunctionType(const std::vector<autoware_map::WaypointRelation> &awmap_way
       straight_branching_cnt++;
     }
   }
-  for(auto idx : merging_idx)
+  for(auto idx : merging_indices)
   {
     if( awmap_waypoint_relations.at(idx).blinker == 1 )
     {
@@ -444,7 +445,7 @@ int getJunctionType(const std::vector<autoware_map::WaypointRelation> &awmap_way
     }
   }
 
-  if(branching_idx.size() >= 2 && merging_idx.size() >= 2 )
+  if(branching_indices.size() >= 2 && merging_indices.size() >= 2 )
   {
     return vector_map_msgs::Lane::COMPOSITION;
   }
@@ -527,10 +528,10 @@ void createDTLanes(const autoware_map::AutowareMapHandler &awmap,
     vmap_lane.lnid = id;
     vmap_lane.did = id;
 
-    std::vector<int> merging_idx = findMergingIdx(awmap_waypoint.getStdWaypointRelations(), awmap_waypoint.waypoint_id, wp_relation2lnid);
-    std::vector<int> branching_idx = findBranchingIdx(awmap_next_waypoint.getStdWaypointRelations(), awmap_next_waypoint.waypoint_id,wp_relation2lnid);
+    std::vector<int> merging_indices = findMergingIdx(awmap_waypoint.getStdWaypointRelations(), awmap_waypoint.waypoint_id, wp_relation2lnid);
+    std::vector<int> branching_indices = findBranchingIdx(awmap_next_waypoint.getStdWaypointRelations(), awmap_next_waypoint.waypoint_id,wp_relation2lnid);
     // //change order of branch/merge lanes according to blinkers. (staright < left turn < right turn)
-    vmap_lane.jct = getJunctionType(awmap_waypoint_relations, branching_idx, merging_idx);
+    vmap_lane.jct = getJunctionType(awmap_waypoint_relations, branching_indices, merging_indices);
     vmap_lane.blid = 0;
     vmap_lane.flid = 0;
     vmap_lane.blid2 = 0;
@@ -539,24 +540,24 @@ void createDTLanes(const autoware_map::AutowareMapHandler &awmap,
     vmap_lane.flid2 = 0;
     vmap_lane.flid3 = 0;
     vmap_lane.flid4 = 0;
-    if(merging_idx.size() >= 1)
-      vmap_lane.blid = merging_idx.at(0) + 1;
-    if(merging_idx.size() >= 2)
-      vmap_lane.blid2 = merging_idx.at(1) + 1;
-    if(merging_idx.size() >= 3)
-      vmap_lane.blid3 = merging_idx.at(2) + 1;
-    if(merging_idx.size() >= 4)
-      vmap_lane.blid4 = merging_idx.at(3) + 1;
-    if(branching_idx.size() >= 1)
-      vmap_lane.flid = branching_idx.at(0) + 1;
-    if(branching_idx.size() >= 2)
-      vmap_lane.flid2 = branching_idx.at(1) + 1;
-    if(branching_idx.size() >= 3)
-      vmap_lane.flid3 = branching_idx.at(2) + 1;
-    if(branching_idx.size() >= 4)
-      vmap_lane.flid4 = branching_idx.at(3) + 1;
-    vmap_lane.bnid = awmap_waypoint.point_id;
-    vmap_lane.fnid = awmap_next_waypoint.point_id;
+    if(merging_indices.size() >= 1)
+      vmap_lane.blid = merging_indices.at(0);
+    if(merging_indices.size() >= 2)
+      vmap_lane.blid2 = merging_indices.at(1);
+    if(merging_indices.size() >= 3)
+      vmap_lane.blid3 = merging_indices.at(2);
+    if(merging_indices.size() >= 4)
+      vmap_lane.blid4 = merging_indices.at(3);
+    if(branching_indices.size() >= 1)
+      vmap_lane.flid = branching_indices.at(0);
+    if(branching_indices.size() >= 2)
+      vmap_lane.flid2 = branching_indices.at(1);
+    if(branching_indices.size() >= 3)
+      vmap_lane.flid3 = branching_indices.at(2);
+    if(branching_indices.size() >= 4)
+      vmap_lane.flid4 = branching_indices.at(3);
+    vmap_lane.bnid = awmap_waypoint.waypoint_id;
+    vmap_lane.fnid = awmap_next_waypoint.waypoint_id;
     vmap_lane.span =  awmap_waypoint_relation.distance;
     vmap_lane.lanetype = awmap_waypoint_relation.blinker;
     vmap_lane.refvel = awmap_waypoint.velocity;
@@ -1166,6 +1167,7 @@ void createWhitelines(const autoware_map::AutowareMapHandler &awmap,
   int white_line_id = getMaxId(vmap_white_lines)+ 1;
   int line_id = getMaxId(vmap_lines)+ 1;
   int point_id = getMaxId(vmap_points) + 1;
+  const double epsilon = 1e-6;
   for ( auto awmap_lane : awmap.findByFilter([] (autoware_map::Lane l){return true; }))
   {
     vector_map_msgs::Point current_vmap_point_left,current_vmap_point_right;
@@ -1181,6 +1183,9 @@ void createWhitelines(const autoware_map::AutowareMapHandler &awmap,
       if(waypoint->waypoint_id == awmap_lane.end_waypoint_id ) {
         next_yaw = prev_yaw;
       }else{
+        autoware_map::Waypoint next =*( waypoint->getNextWaypoint(awmap_lane.lane_id) );
+        if ( distance2d(*waypoint->getPointPtr(), *next.getPointPtr()) < epsilon) continue;
+
         next_yaw = getAngleToNextWaypoint(waypoint,awmap_lane.lane_id);
       }
 
@@ -1234,7 +1239,7 @@ void createWhitelines(const autoware_map::AutowareMapHandler &awmap,
         vmap_white_line_right.type =vector_map_msgs::WhiteLine::DASHED_LINE_BLANK;
       }else if(awmap_lane.lane_number == awmap_lane.num_of_lanes)
       {
-        vmap_white_line_right.color = 'Y';
+        vmap_white_line_right.color = 'W';
         vmap_white_line_right.type = vector_map_msgs::WhiteLine::SOLID_LINE;
       }
       else{
@@ -1294,6 +1299,20 @@ void createDummyUtilityPoles(const std::vector<vector_map_msgs::Pole> vmap_poles
     utility_pole.linkid = 0;
     vmap_utility_poles.push_back(utility_pole);
   }
+}
+
+double distance2d(const autoware_map_msgs::Point p1, const autoware_map_msgs::Point p2)
+{
+  geometry_msgs::Point geo_p1, geo_p2;
+  
+  geo_p1.x = p1.x;
+  geo_p1.y = p1.y;
+  geo_p1.z = 0;
+  geo_p2.x = p2.x;
+  geo_p2.y = p2.y;
+  geo_p2.z = 0;
+  
+  return amathutils::find_distance(geo_p1, geo_p2);  
 }
 
 //keep angles within (M_PI, -M_PI]
