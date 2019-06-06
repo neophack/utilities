@@ -8,7 +8,7 @@ opendrive2autoware_converter is a rosnode that convert OpenDRIVE map format (.xo
 ### How to use: 
 example:
 ```
-rosrun vector_map_converter opendrive2autowaremap _map_file:=samplesample1.1.xodr _country_codes_dir:=~/Autoware/ros/src/data/packages/vector_map_converter/countries/ _save_dir:=autoware_map/ _resolution:=0.5 _keep_right:=True
+rosrun vector_map_converter opendrive2autowaremap _map_file:=sample1.1.xodr _country_codes_dir:=~/Autoware/src/autoware/utilities/vector_map_converter/countries/ _save_dir:=autoware_map/ _resolution:=0.5 _keep_right:=True
 ```
 Mandatory ROS Parameters:
 + \_map\_file: file path, source OpenDRIVE map (.xodr) file. 
