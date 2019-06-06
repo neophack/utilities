@@ -63,9 +63,6 @@ void convertLineString2WhiteLine(ConstLineString3d line_string,
         fixPointCoordinate(amm_point);
         convertPoint(vmm_point, amm_point);
         vmm_point.pid = point_id;
-        if(USE_FIXED_HEIGHT){
-          vmm_point.h = FIXED_HEIGHT;
-        }
         vmap_points.push_back(vmm_point);
         if(cnt == 0) {
             cnt++;
