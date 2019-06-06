@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   lanelet2_traffic_rules
   roscpp
   vector_map
+  op_planner
 )
 
 catkin_package(
@@ -44,19 +45,32 @@ add_executable(autowaremap2vectormap src/autoware2vectormap.cpp src/autoware2vec
 add_executable(lanelet2autowaremap src/lanelet2autowaremap.cpp src/lanelet2autowaremap_core.cpp src/autoware2vectormap_core.cpp)
 add_executable(lanelet2vectormap src/lanelet2vectormap.cpp src/lanelet2vectormap_core.cpp src/lanelet2autowaremap_core.cpp src/autoware2vectormap_core.cpp)
 
+add_executable(opendrive2autowaremap 
+  src/opendrive2autowaremap_core/opendrive_loader.cpp
+  src/opendrive2autowaremap_core/map_writer.cpp
+  src/opendrive2autowaremap_core/xml_helpers.cpp
+  src/opendrive2autowaremap_core/odr_spiral.cpp
+  src/opendrive2autowaremap_core/opendrive_road.cpp
+  src/opendrive2autowaremap_core/opendrive_objects.cpp
+  src/opendrive2autowaremap.cpp 
+)
+
 add_dependencies(autowaremap2vectormap ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(lanelet2autowaremap ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(lanelet2vectormap ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(opendrive2autowaremap ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(autowaremap2vectormap ${catkin_LIBRARIES})
 target_link_libraries(lanelet2autowaremap ${catkin_LIBRARIES})
 target_link_libraries(lanelet2vectormap ${catkin_LIBRARIES})
+target_link_libraries(opendrive2autowaremap ${catkin_LIBRARIES})
 
 ## Install executables and/or libraries
 install(TARGETS
         autowaremap2vectormap
         lanelet2autowaremap
         lanelet2vectormap
+        opendrive2autowaremap
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
