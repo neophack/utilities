@@ -65,9 +65,6 @@
 #include <vector_map_msgs/WayArea.h>
 #include <vector_map_msgs/WhiteLine.h>
 
-#define USE_FIXED_HEIGHT 1
-#define FIXED_HEIGHT 110
-
 void convertLanelet2AutowareMap(lanelet::LaneletMapPtr map,
                                 lanelet::projection::UtmProjector projector,
                                 std::vector<autoware_map_msgs::Area> &areas,
@@ -103,7 +100,8 @@ void writeAutowareMapMsgs(std::string output_dir,
                           std::vector<autoware_map_msgs::WaypointRelation> &waypoint_relations,
                           std::vector<autoware_map_msgs::WaypointSignalRelation> &waypoint_signal_relations);
 
-autoware_map_msgs::Point convertPoint(const lanelet::BasicPoint3d lanelet_point, const lanelet::projection::UtmProjector &projector);
+autoware_map_msgs::Point convertPoint(const lanelet::Point3d lanelet_point, const lanelet::projection::UtmProjector &projector);
+autoware_map_msgs::Point convertPoint(const lanelet::ConstPoint3d &lanelet_point, const lanelet::projection::UtmProjector &projector);
 void fixPointCoordinate(autoware_map_msgs::Point &point);
 
 #endif
