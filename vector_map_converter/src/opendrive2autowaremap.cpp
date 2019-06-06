@@ -26,7 +26,7 @@ int main(int argc, char **argv)
     printUsage();
     exit(1);
   }
-  if(!pnh.hasParam("country_code_dir")){
+  if(!pnh.hasParam("country_codes_dir")){
     ROS_ERROR_STREAM("You must specify country code directory path!");
     printUsage();
     exit(1);
@@ -36,12 +36,7 @@ int main(int argc, char **argv)
   pnh.getParam("country_codes_dir", country_codes_path);
   pnh.param<std::string>("save_dir", dst_path, "./");
   pnh.param<double>("resolution", wp_res, 0.5);
-
-  src_path = std::string(argv[1]);
-  country_codes_path = std::string(argv[2]);
-  dst_path = std::string(argv[3]);
-  if(argc > 4)
-    wp_res = atof(argv[4]);
+  pnh.param<bool>("keep_right", keep_right, true);
   
   opendrive_converter::OpenDriveLoader map_loader;
   PlannerHNS::RoadNetwork map;
