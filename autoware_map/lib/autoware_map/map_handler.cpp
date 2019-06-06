@@ -253,7 +253,7 @@ void AutowareMapHandler::resolveRelations()
 
         }
         catch (std::out_of_range& ex) {
-            std::cout << "out of range" << ex.what() << std::endl;
+            std::cout << "out of rangein lane attribute relations " << ex.what() << std::endl;
         }
     }
 
@@ -266,7 +266,7 @@ void AutowareMapHandler::resolveRelations()
 
         }
         catch (std::out_of_range& ex) {
-            std::cout << "out of range" << ex.what() << std::endl;
+            std::cout << "out of range in lane　change　relation " << ex.what() << std::endl;
         }
     }
 
@@ -281,7 +281,7 @@ void AutowareMapHandler::resolveRelations()
 
         }
         catch (std::out_of_range& ex) {
-            std::cout << "out of range" << ex.what() << std::endl;
+            std::cout << "out of range in lane relations " << ex.what() << std::endl;
         }
     }
 
@@ -297,7 +297,7 @@ void AutowareMapHandler::resolveRelations()
 
         }
         catch (std::out_of_range& ex) {
-            std::cout << "out of range" << ex.what() << std::endl;
+            std::cout << "out of range in lane signal light relations " << ex.what() << std::endl;
         }
     }
 
@@ -313,7 +313,7 @@ void AutowareMapHandler::resolveRelations()
 
         }
         catch (std::out_of_range& ex) {
-            std::cout << "out of range" << ex.what() << std::endl;
+            std::cout << "out of range in opposite lane relations " << ex.what() << std::endl;
         }
     }
 
@@ -329,7 +329,7 @@ void AutowareMapHandler::resolveRelations()
 
         }
         catch (std::out_of_range& ex) {
-            std::cout << "out of range" << ex.what() << std::endl;
+            std::cout << "out of range in lane relations " << ex.what() << std::endl;
         }
     }
 
@@ -345,7 +345,7 @@ void AutowareMapHandler::resolveRelations()
 
         }
         catch (std::out_of_range& ex) {
-            std::cout << "out of range" << ex.what() << std::endl;
+            std::cout << "out of range in waypoint relations " << ex.what() << std::endl;
         }
     }
 
@@ -361,7 +361,7 @@ void AutowareMapHandler::resolveRelations()
 
         }
         catch (std::out_of_range& ex) {
-            std::cout << "out of range" << ex.what() << std::endl;
+            std::cout << "out of range in waypoint signal relations " << ex.what() << std::endl;
         }
     }
 
@@ -376,7 +376,7 @@ void AutowareMapHandler::resolveRelations()
 
         }
         catch (std::out_of_range& ex) {
-            std::cout << "out of range" << ex.what() << std::endl;
+            std::cout << "out of range in areas " << ex.what() << std::endl;
         }
     }
 
@@ -398,7 +398,7 @@ void AutowareMapHandler::resolveRelations()
 
         }
         catch (std::out_of_range& ex) {
-            std::cout << "out of range" << ex.what() << std::endl;
+            std::cout << "out of range in lane " << ex.what() << std::endl;
         }
     }
     for  ( auto item : signal_lights_)
@@ -411,7 +411,7 @@ void AutowareMapHandler::resolveRelations()
 
         }
         catch (std::out_of_range& ex) {
-            std::cout << "out of range" << ex.what() << std::endl;
+            std::cout << "out of range in signal lights " << ex.what() << std::endl;
         }
     }
 
@@ -423,7 +423,7 @@ void AutowareMapHandler::resolveRelations()
 
         }
         catch (std::out_of_range& ex) {
-            std::cout << "out of range" << ex.what() << std::endl;
+            std::cout << "out of range in wayareas " << ex.what() << std::endl;
         }
     }
 
@@ -435,7 +435,7 @@ void AutowareMapHandler::resolveRelations()
 
         }
         catch (std::out_of_range& ex) {
-            std::cout << "out of range" << ex.what() << std::endl;
+            std::cout << "out of range in waypoints " << ex.what() << std::endl;
         }
     }
 }
