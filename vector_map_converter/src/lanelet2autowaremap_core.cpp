@@ -316,7 +316,6 @@ void set_fine_centerline(Lanelet &lanelet)
   if(partitions == 0)
   {
     partitions = 1;
-    return;
   }
   double left_resolution = left_length / partitions;
   double right_resolution = right_length / partitions;
@@ -328,15 +327,14 @@ void set_fine_centerline(Lanelet &lanelet)
     ROS_ERROR_STREAM("something wrong with number of points. (right,left, partitions) " << right_points.size() << ","<< left_points.size() << "," << partitions << "failed to calculate centerline!!!" << std::endl);
     exit(1);
   }
-
-  for(unsigned int i = 0; i < partitions + 1; i++)
+    for(unsigned int i = 0; i < partitions+1; i++)
   {
     BasicPoint3d center_basic_point = (right_points.at(i) + left_points.at(i)) / 2;
     Point3d center_point(utils::getId(), center_basic_point.x(), center_basic_point.y(), center_basic_point.z());
     centerline.push_back(center_point);
   }
   lanelet.setCenterline(centerline);
-  return;
+    return;
 }
 
 int getNewId(const int id, const std::unordered_map<int, int> &waypoint_id_correction )
@@ -468,14 +466,15 @@ void createStopLines(const LineStringLayer &linestring_layer,
   //stop_line
   for (const auto &line : linestring_layer)
   {
-    if(line.attributes().at(AttributeName::Type)==AttributeValueString::StopLine) {
+    if(line.attributeOr(AttributeName::Type, "")==AttributeValueString::StopLine) {
       for(const auto &relation : waypoint_relations)
       {
+        
         auto wp = waypoints_map.at(relation.waypoint_id);
-        auto next_wp = waypoints_map.at(relation.next_waypoint_id);
-        auto pt = points_map.at(wp.point_id);
-        auto next_pt = points_map.at(next_wp.point_id);
-        double epsilon = 0.1;
+                auto next_wp = waypoints_map.at(relation.next_waypoint_id);
+                auto next_pt = points_map.at(next_wp.point_id);
+                auto pt = points_map.at(wp.point_id);
+                double epsilon = 0.1;
 
         geometry_msgs::Point l1, l2, p1, p2;
         l1.x = line.front().x();
@@ -491,21 +490,21 @@ void createStopLines(const LineStringLayer &linestring_layer,
         p2.y = next_pt.y;
         p2.z = 0;
 
-        //stopline intersect with current waypoint
+                //stopline intersect with current waypoint
         if(amathutils::distanceFromSegment(l1, l2, p1) <= epsilon )
         {
-          waypoints_map.at(relation.waypoint_id).stop_line = 1;
-          continue;
+                    waypoints_map.at(relation.waypoint_id).stop_line = 1;
+                    continue;
         }
         //stopline intersect with next waypoint
         if(amathutils::distanceFromSegment(l1, l2, p2) <= epsilon) {
-          waypoints_map.at(relation.next_waypoint_id).stop_line = 1;
-          continue;
+                    waypoints_map.at(relation.next_waypoint_id).stop_line = 1;
+                    continue;
         }
         //stopline intersets between current and next waypoint
         if (amathutils::isIntersectLine(l1, l2, p1, p2)) {
-          waypoints_map.at(relation.waypoint_id).stop_line = 1;
-        }
+                    waypoints_map.at(relation.waypoint_id).stop_line = 1;
+                  }
       }
     }
   }
@@ -1037,21 +1036,21 @@ void convertLanelet2AutowareMap(LaneletMapPtr map,
     set_fine_centerline(lanelet);
   }
 
-  createPoints(vehicle_lanelets, projector, points_map);
-  createWaypoints(vehicle_lanelets, traffic_rules, waypoints_map);
-  createLanes(vehicle_lanelets, traffic_rules, vehicle_graph, lanes_map);
-  createLaneRelations(vehicle_lanelets, vehicle_graph, lane_relations);
-  createLaneChangeRelations(vehicle_lanelets, vehicle_graph, lane_change_relations);
-  createOppositeLaneRelation(vehicle_lanelets, map, traffic_rules, vehicle_graph, opposite_lane_relations);
-  createWaypointLaneRelations(vehicle_lanelets, waypoint_lane_relations);
-  createSignalLights(vehicle_lanelets, projector, points_map,signals, signal_lights);
-  createWaypointRelations(vehicle_lanelets, waypoint_relations);
-  createLaneSignalLightRelations(vehicle_lanelets, lane_signal_light_relations);
-  createWaypointSignalRelations(vehicle_lanelets, waypoint_signal_relations);
-  createStopLines(map->lineStringLayer, waypoint_relations, points_map, waypoints_map);
-  createIntersections(vehicle_lanelets, vehicle_graph, projector, points_map, areas, lane_attribute_relations);
-  createCrossWalks(vehicle_lanelets, overall_graphs, projector, points_map, areas, lane_attribute_relations);
-
+    createPoints(vehicle_lanelets, projector, points_map);
+    createWaypoints(vehicle_lanelets, traffic_rules, waypoints_map);
+    createLanes(vehicle_lanelets, traffic_rules, vehicle_graph, lanes_map);
+    createLaneRelations(vehicle_lanelets, vehicle_graph, lane_relations);
+    createLaneChangeRelations(vehicle_lanelets, vehicle_graph, lane_change_relations);
+    createOppositeLaneRelation(vehicle_lanelets, map, traffic_rules, vehicle_graph, opposite_lane_relations);
+    createWaypointLaneRelations(vehicle_lanelets, waypoint_lane_relations);
+    createSignalLights(vehicle_lanelets, projector, points_map,signals, signal_lights);
+    createWaypointRelations(vehicle_lanelets, waypoint_relations);
+    createLaneSignalLightRelations(vehicle_lanelets, lane_signal_light_relations);
+    createWaypointSignalRelations(vehicle_lanelets, waypoint_signal_relations);
+    createStopLines(map->lineStringLayer, waypoint_relations, points_map, waypoints_map);
+    createIntersections(vehicle_lanelets, vehicle_graph, projector, points_map, areas, lane_attribute_relations);
+    createCrossWalks(vehicle_lanelets, overall_graphs, projector, points_map, areas, lane_attribute_relations);
+  
   removeOverlappingWaypoints(points_map, waypoints_map, lanes, waypoint_lane_relations, waypoint_relations, waypoint_signal_relations);
 
   for(const auto &item : waypoints_map)
