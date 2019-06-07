@@ -487,26 +487,25 @@ void createDTLanes(const autoware_map::AutowareMapHandler &awmap,
 
   //create lookup table:
   // key = waypoint_relation
-  // value = lnid;
-  std::unordered_map<uint_pair, unsigned int, boost::hash<uint_pair> > wp_relation2lnid;
-  unsigned int id = 1;
+  // value = index in waypoint_relation;
+  std::unordered_map<uint_pair, unsigned int, boost::hash<uint_pair> > wp_relation2index;
+  unsigned int idx = 0;
   for ( auto r : awmap_waypoint_relations )
   {
     auto key = std::make_pair(r.waypoint_id,r.next_waypoint_id);
-    wp_relation2lnid[key] = id;
-    id++;
+    wp_relation2index[key] = idx++;
   }
 
-  id = 1;
+  unsigned lnid = 1;
   for ( auto awmap_waypoint_relation : awmap_waypoint_relations )
   {
-    if(id % 1000 == 0)
-      std::cout << id << "/" << awmap_waypoint_relations.size() << std::endl;
+    if(lnid % 1000 == 0)
+      std::cout << lnid << "/" << awmap_waypoint_relations.size() << std::endl;
     autoware_map::Waypoint awmap_waypoint = *(awmap_waypoint_relation.getWaypointPtr());
     autoware_map::Waypoint awmap_next_waypoint = *(awmap_waypoint_relation.getNextWaypointPtr());
     //create dtlane
     vector_map_msgs::DTLane vmap_dtlane;
-    vmap_dtlane.did = id;
+    vmap_dtlane.did = lnid;
     vmap_dtlane.dist = awmap_waypoint_relation.distance;
     vmap_dtlane.pid = awmap_waypoint_relation.getWaypointPtr()->point_id;
     vmap_dtlane.dir = convertDecimalToDDMMSS(awmap_waypoint_relation.yaw);
@@ -525,11 +524,11 @@ void createDTLanes(const autoware_map::AutowareMapHandler &awmap,
 
     //create lane
     vector_map_msgs::Lane vmap_lane;
-    vmap_lane.lnid = id;
-    vmap_lane.did = id;
+    vmap_lane.lnid = lnid;
+    vmap_lane.did = lnid;
 
-    std::vector<int> merging_indices = findMergingIdx(awmap_waypoint.getStdWaypointRelations(), awmap_waypoint.waypoint_id, wp_relation2lnid);
-    std::vector<int> branching_indices = findBranchingIdx(awmap_next_waypoint.getStdWaypointRelations(), awmap_next_waypoint.waypoint_id,wp_relation2lnid);
+    std::vector<int> merging_indices = findMergingIdx(awmap_waypoint.getStdWaypointRelations(), awmap_waypoint.waypoint_id, wp_relation2index);
+    std::vector<int> branching_indices = findBranchingIdx(awmap_next_waypoint.getStdWaypointRelations(), awmap_next_waypoint.waypoint_id, wp_relation2index);
     // //change order of branch/merge lanes according to blinkers. (staright < left turn < right turn)
     vmap_lane.jct = getJunctionType(awmap_waypoint_relations, branching_indices, merging_indices);
     vmap_lane.blid = 0;
@@ -540,22 +539,23 @@ void createDTLanes(const autoware_map::AutowareMapHandler &awmap,
     vmap_lane.flid2 = 0;
     vmap_lane.flid3 = 0;
     vmap_lane.flid4 = 0;
+    //lnid = [index of waypoint_relations] + 1
     if(merging_indices.size() >= 1)
-      vmap_lane.blid = merging_indices.at(0);
+      vmap_lane.blid = merging_indices.at(0) + 1;
     if(merging_indices.size() >= 2)
-      vmap_lane.blid2 = merging_indices.at(1);
+      vmap_lane.blid2 = merging_indices.at(1) + 1;
     if(merging_indices.size() >= 3)
-      vmap_lane.blid3 = merging_indices.at(2);
+      vmap_lane.blid3 = merging_indices.at(2) + 1;
     if(merging_indices.size() >= 4)
-      vmap_lane.blid4 = merging_indices.at(3);
+      vmap_lane.blid4 = merging_indices.at(3) + 1;
     if(branching_indices.size() >= 1)
-      vmap_lane.flid = branching_indices.at(0);
+      vmap_lane.flid = branching_indices.at(0) + 1;
     if(branching_indices.size() >= 2)
-      vmap_lane.flid2 = branching_indices.at(1);
+      vmap_lane.flid2 = branching_indices.at(1) + 1;
     if(branching_indices.size() >= 3)
-      vmap_lane.flid3 = branching_indices.at(2);
+      vmap_lane.flid3 = branching_indices.at(2) + 1;
     if(branching_indices.size() >= 4)
-      vmap_lane.flid4 = branching_indices.at(3);
+      vmap_lane.flid4 = branching_indices.at(3) + 1;
     vmap_lane.bnid = awmap_waypoint.waypoint_id;
     vmap_lane.fnid = awmap_next_waypoint.waypoint_id;
     vmap_lane.span =  awmap_waypoint_relation.distance;
@@ -581,7 +581,7 @@ void createDTLanes(const autoware_map::AutowareMapHandler &awmap,
     vmap_lane.roadsecid = 0;
     vmap_lane.linkwaid = 0;
     vmap_lanes.push_back(vmap_lane);
-    id++;
+    lnid++;
   }
 }
 
