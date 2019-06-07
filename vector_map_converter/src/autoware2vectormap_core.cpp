@@ -787,7 +787,10 @@ void createSignals( const autoware_map::AutowareMapHandler &awmap,
   std::vector<autoware_map::LaneSignalLightRelation> awmap_lane_signal_relations = awmap.findByFilter( [&](autoware_map::LaneSignalLightRelation lslr){return true; });
 
   int vector_id = getMaxId(vmap_vectors) + 1;
-
+  int max_lnid = 1;
+  bool failed_to_find_lnid = false;
+  std::set<int> lnid_checklist;
+  
   for ( auto awmap_signal_light : awmap_signal_lights)
   {
     //create dummy poles if not created yet
@@ -844,18 +847,36 @@ void createSignals( const autoware_map::AutowareMapHandler &awmap,
         {
           if( awmap_waypoint_lane_relation.lane_id == awmap_lane.lane_id)
           {
+            //lnid = index of waypoint_relations + 1 
             linkid = std::distance(awmap_waypoint_relations.begin(), itr) + 1;
           }
         }
       }
     }
+    
+    //check for validity 
     if(linkid == 0)
     {
       ROS_ERROR_STREAM("failed to find valid linkid for signal");
+      failed_to_find_lnid = true;
     }
-
+    if(lnid_checklist.find(linkid) != lnid_checklist.end())
+    {
+      ROS_ERROR_STREAM("vector map format does not support lanes linked to multiple traffic lights." << std::endl
+                    << "Conversion will continue, but note that converted map might not be able to support all nodes in Autoware(e.g. vector_map_server)");
+      failed_to_find_lnid = true;
+    }
+    
+    if(failed_to_find_lnid)
+    {
+      while(lnid_checklist.find(linkid) != lnid_checklist.end())  linkid = max_lnid + 1; 
+    }
+    
     vmap_signal.linkid = linkid;
     vmap_signals.push_back(vmap_signal);
+    
+    lnid_checklist.insert(linkid);
+    max_lnid = (linkid > max_lnid)?linkid:max_lnid;
   }
 }
 
