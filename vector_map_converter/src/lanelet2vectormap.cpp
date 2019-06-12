@@ -62,7 +62,6 @@ int main(int argc, char **argv)
     std::vector<autoware_map_msgs::LaneChangeRelation> lane_change_relations;
     std::vector<autoware_map_msgs::OppositeLaneRelation> opposite_lane_relations;
     std::vector<autoware_map_msgs::Area> areas;
-    std::vector<autoware_map_msgs::Route> routes;
     std::vector<autoware_map_msgs::Signal> signals;
     std::vector<autoware_map_msgs::SignalLight> signal_lights;
     std::vector<autoware_map_msgs::Wayarea> wayareas;
