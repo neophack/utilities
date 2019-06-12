@@ -30,7 +30,6 @@
 #include <autoware_map_msgs/LaneSignalLightRelationArray.h>
 #include <autoware_map_msgs/LaneChangeRelationArray.h>
 #include <autoware_map_msgs/OppositeLaneRelationArray.h>
-#include <autoware_map_msgs/RouteArray.h>
 #include <autoware_map_msgs/PointArray.h>
 #include <autoware_map_msgs/AreaArray.h>
 #include <autoware_map_msgs/SignalArray.h>

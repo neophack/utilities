@@ -62,7 +62,6 @@ Category is set for each autoware_map_msgs type as follwing:
 + autoware_map::Category::OPPOSITE_LANE_RELATION
 + autoware_map::Category::POINT
 + autoware_map::Category::AREA
-+ autoware_map::Category::ROUTE
 + autoware_map::Category::SIGNAL
 + autoware_map::Category::SIGNAL_LIGHT
 + autoware_map::Category::WAYAREA
