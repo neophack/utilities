@@ -279,6 +279,7 @@ void splitLine(ConstLineString3d laneBound, std::vector<BasicPoint3d> &splitted_
   BasicPoint3d prev_pt = laneBound.front();
   for(const BasicPoint3d pt : laneBound)
   {
+    if(splitted_points.size() >= partitions) break;
     //continue if no points are made in current segment
     double segment_length = geometry::distance2d(pt, prev_pt);
     if(segment_length + residue < resolution) {
