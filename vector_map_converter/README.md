@@ -11,13 +11,13 @@ example:
 rosrun vector_map_converter opendrive2autowaremap _map_file:=sample1.1.xodr _country_codes_dir:=~/Autoware/src/autoware/utilities/vector_map_converter/countries/ _save_dir:=autoware_map/ _resolution:=0.5 _keep_right:=True
 ```
 Mandatory ROS Parameters:
-+ \_map\_file: file path, source OpenDRIVE map (.xodr) file. 
-+ \_country\_codes\_dir: folder path, country code definition files, for traffic signs and road marks.
++ ~map\_file: file path, source OpenDRIVE map (.xodr) file. 
++ ~country\_codes\_dir: folder path, country code definition files, for traffic signs and road marks.
 
 Optional ROS parameter
-+ \_save\_dir: folder path, destination folder to write the autoware map .csv files. (default is current working directory)
-+ \_resolution: float, optional, waypoints resolution, default is 0.5
-+ \_keep\_right: bool, optional(default: True), specify whether car should drive in right lane or left lane. 
++ ~save\_dir: folder path, destination folder to write the autoware map .csv files. (default is current working directory)
++ ~resolution: float, optional, waypoints resolution, default is 0.5
++ ~keep\_right: bool, optional(default: True), specify whether car should drive in right lane or left lane. 
 
 ## autowaremap2vectormap node
 This node converts Autoware Map Format into vector map csv files:
@@ -26,15 +26,10 @@ This node converts Autoware Map Format into vector map csv files:
 `rosrun vector_map_converter autowaremap2vectormap \_map\_dir:=[autowaremap directory]`
 
 #### Parameters:
-- ~map_dir (string, required)
-  directory where autoware map csv files are saved
-- ~save_dir (string, default: "./")<br>
-directory to save converted_map
-- ~create_whitelines (bool, default: "false") <br>
-create whiteline.csv from lane width
-- ~wayareas_from_lanes (bool, default: "false") <br>
-create wayareas from lane shapes
-
+- ~map_dir (string, required): directory where autoware map csv files are saved
+- ~save_dir (string, default: "./"): directory to save converted map
+- ~create_whitelines (bool, default: "false"): create whiteline.csv from lane width
+- ~wayareas_from_lanes (bool, default: "false"): create wayareas from lane shapes
 
 #### Output Files
 - area.csv
@@ -86,6 +81,21 @@ This node converts lanelet2 map into vector map csv files used in Autoware.
 `rosrun vector_map_converter lanelet2vectormap _map_file:=<path to lanelet map> _origin_lat:=<origin for projection>  _origin_lon:=<origin for projection>`<br>
 For sample lanelet map:<br>
 `rosrun vector_map_converter lanelet2vectormap _map_file:=~/catkin_ws/src/vector_map_converter/lanelet2/lanelet2_maps/res/mapping_example.osm _origin_lat:=49.00331750371  _origin_lon:=8.42403027399`
+
+#### Parameters
+- ~map_file (string, required): lanelet OSM file
+- ~save_dir (string, default: "./"): directory to save converted map
+- ~origin_lat (double, required): latitude origin of the map.
+- ~origin_lon (double, required): longitude origin of the map.
+- ~wayareas_from_lanes (bool, default: "false"): create wayareas from lane shapes
+
+#### Selecting Origin
+Origin can be anywhere near your map location.
+For example, you can use lat/lon value of the first point that appears in your osm file.
+Lanelet2 default loader needs an origin to load a map and use the origin to convert it to lat/lon to xyz coordinates at loading time.
+However, the xyz coordinate will be then converted into MGRS coordinate. (x=northing and y=easting within 100km grid of MGRS)
+Therefore, the origin does not affect the final output of the converter, but user needs to specify it to satisfy the needs of lanelet2 loader.
+(TODO: implement custom projector so that user won't need to set origin in the future.)
 
 ### Output Files
 - area.csv
