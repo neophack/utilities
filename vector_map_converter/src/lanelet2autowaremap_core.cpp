@@ -564,7 +564,7 @@ void createOppositeLaneRelation(const std::vector<Lanelet> &vehicle_lanelets,
     auto closest_opposite_opt = getClosestOppositeLane(map,vehicle_graph,lanelet,traffic_rules);
     if(closest_opposite_opt!=boost::none) {
       ConstLanelet closest_opposite = closest_opposite_opt.value();
-      for(opposite_lane : vehicle_graph->besides(closest_opposite))
+      for(const auto &opposite_lane : vehicle_graph->besides(closest_opposite))
       {
         autoware_map_msgs::OppositeLaneRelation opposite_lane_relation;
         opposite_lane_relation.lane_id = lanelet.id();
