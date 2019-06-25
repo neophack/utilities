@@ -803,7 +803,6 @@ void createIntersections(const std::vector<Lanelet> &vehicle_lanelets,
     std::vector<BasicPoint2d> hull;
     for ( const auto &conflicting_lanelet : conflicting_lanelets)
     {
-      std::cout << conflicting_lanelet.id() << " " ;
       for( const auto &pt : conflicting_lanelet.polygon3d())
       {
         vertices.push_back(utils::to2D(pt.basicPoint()));
