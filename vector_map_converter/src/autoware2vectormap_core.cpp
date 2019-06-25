@@ -862,7 +862,7 @@ void createSignals( const autoware_map::AutowareMapHandler &awmap,
     }
     if(lnid_checklist.find(linkid) != lnid_checklist.end())
     {
-      ROS_ERROR_STREAM("vector map format does not support lanes linked to multiple traffic lights." << std::endl
+      ROS_WARN_STREAM("vector map format does not support lanes linked to multiple traffic lights." << std::endl
                     << "Conversion will continue, but note that converted map might not be able to support all nodes in Autoware(e.g. vector_map_server)");
       failed_to_find_lnid = true;
     }
