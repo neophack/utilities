@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>vector_map_converter</name>
+  <version>0.1.0</version>
+  <description>This package contains tools to convert different map formats.</description>
+  
+  <maintainer email="mitsudome-r@todo.todo">mitsudome-r</maintainer>
+
+  <license>Apache 2</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>autoware_map</build_depend>
+  <build_depend>autoware_map_msgs</build_depend>
+  <build_depend>amathutils_lib</build_depend>
+  <build_depend>geodesy</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>lanelet2_core</build_depend>
+  <build_depend>lanelet2_io</build_depend>
+  <build_depend>lanelet2_projection</build_depend>
+  <build_depend>lanelet2_routing</build_depend>
+  <build_depend>lanelet2_traffic_rules</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>vector_map</build_depend>
+  <build_depend>op_planner</build_depend>
+  <build_export_depend>autoware_map</build_export_depend>
+  <build_export_depend>autoware_map_msgs</build_export_depend>
+  <build_export_depend>amathutils_lib</build_export_depend>
+  <build_export_depend>geodesy</build_export_depend>
+  <build_export_depend>geometry_msgs</build_export_depend>
+  <build_export_depend>lanelet2_core</build_export_depend>
+  <build_export_depend>lanelet2_io</build_export_depend>
+  <build_export_depend>lanelet2_projection</build_export_depend>
+  <build_export_depend>lanelet2_routing</build_export_depend>
+  <build_export_depend>lanelet2_traffic_rules</build_export_depend>
+  <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>vector_map</build_export_depend>
+  <build_export_depend>op_planner</build_export_depend>
+  <exec_depend>autoware_map</exec_depend>
+  <exec_depend>autoware_map_msgs</exec_depend>
+  <exec_depend>amathutils_lib</exec_depend>
+  <exec_depend>geodesy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>lanelet2_core</exec_depend>
+  <exec_depend>lanelet2_io</exec_depend>
+  <exec_depend>lanelet2_projection</exec_depend>
+  <exec_depend>lanelet2_routing</exec_depend>
+  <exec_depend>lanelet2_traffic_rules</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>vector_map</exec_depend>
+  <exec_depend>op_planner</exec_depend>
+
+  <export>
+  </export>
+</package>
