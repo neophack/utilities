@@ -281,7 +281,7 @@ void splitLine(ConstLineString3d laneBound, std::vector<BasicPoint3d> &splitted_
   {
     if(splitted_points.size() >= partitions) break;
     //continue if no points are made in current segment
-    double segment_length = geometry::distance2d(pt, prev_pt);
+    double segment_length = geometry::distance(pt, prev_pt);
     if(segment_length + residue < resolution) {
       residue += segment_length;
       prev_pt = pt;
@@ -325,7 +325,9 @@ void set_fine_centerline(Lanelet &lanelet)
   splitLine(lanelet.rightBound(), right_points, right_resolution, partitions);
 
   if(left_points.size() != partitions + 1 || right_points.size() != partitions + 1) {
-    ROS_ERROR_STREAM("something wrong with number of points. (right,left, partitions) " << right_points.size() << ","<< left_points.size() << "," << partitions << "failed to calculate centerline!!!" << std::endl);
+    ROS_ERROR_STREAM( "lanelet " << lanelet.id() << ":" << std::endl
+                   << "Tried to split split boundaries into " << partition << "nodes, but got (right,left)=("<< right_points.size() << "," << left_points.size() << ") nodes." << std::endl
+                   << "failed to calculate centerline!!!" << std::endl);
     exit(1);
   }
     for(unsigned int i = 0; i < partitions+1; i++)
