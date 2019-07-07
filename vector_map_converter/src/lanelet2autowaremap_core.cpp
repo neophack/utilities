@@ -326,7 +326,7 @@ void set_fine_centerline(Lanelet &lanelet)
 
   if(left_points.size() != partitions + 1 || right_points.size() != partitions + 1) {
     ROS_ERROR_STREAM( "lanelet " << lanelet.id() << ":" << std::endl
-                   << "Tried to split split boundaries into " << partition << "nodes, but got (right,left)=("<< right_points.size() << "," << left_points.size() << ") nodes." << std::endl
+                   << "Tried to split split boundaries into " << partitions << "nodes, but got (right,left)=("<< right_points.size() << "," << left_points.size() << ") nodes." << std::endl
                    << "failed to calculate centerline!!!" << std::endl);
     exit(1);
   }
