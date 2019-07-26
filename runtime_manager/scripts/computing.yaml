@@ -87,7 +87,24 @@ subs :
         cmd  : roslaunch ekf_localizer ekf_localizer.launch
         param : ekf_localizer_param
         gui  :
-          dialog_height : 600
+          dialog_height : 700
+          use_pose_with_covariance:
+             flags : [ nl ]
+          pose_stddev_x:
+             flags : [ nl ]
+             depend : use_pose_with_covariance
+             depend_bool : 'lambda v : v == 0'
+             flags : [ nl ]
+          pose_stddev_y:
+             flags : [ nl ]
+             depend : use_pose_with_covariance
+             depend_bool : 'lambda v : v == 0'
+             flags : [ nl ]
+          pose_stddev_yaw:
+             flags : [ nl ]
+             depend : use_pose_with_covariance
+             depend_bool : 'lambda v : v == 0'
+             flags : [ nl ]
     - name : twist_generator
       desc : twist_generator
       subs :
@@ -1011,15 +1028,6 @@ params :
       cmd_param :
         dash        : ''
         delim       : ':='
-    - name    : tracker_output_topic
-      desc    : output_topic desc sample
-      label   : 'output topic'
-      kind    : topic
-      topic_type : autoware_msgs/DetectedObjectArray
-      v       : /detection/object_tracker/objects
-      cmd_param :
-        dash        : ''
-        delim       : ':='
     - name    : tracking_frame
       desc    : trakcing_frame_ desc sample
       label   : 'tracking frame'
@@ -1583,47 +1591,47 @@ params :
       - Waypoint
       - Dialog
       descs :
-      - Waypoint desc sample
-      - Dialog desc sample
-      v     : 1
+      - use velocity on waypoints
+      - use constant velocity
+      v     : 0
     - name  : velocity
-      desc  : velocity desc sample
+      desc  : velocity in dialog mode
       label : Velocity
       min   : 0
       max   : 60
       v     : 5.0
     - name  : lookahead_distance
-      desc  : lookahead_distance desc sample
+      desc  : lookahead distance in dialog mode
       label : Lookahead Distance
       min   : 0
       max   : 30
       v     : 4.0
     - name  : lookahead_ratio
-      desc  : lookahead_ratio desc sample
+      desc  : velocity proportional coefficient for lookahead distance in waypoint mode
       label : lookahead_ratio
       min   : 0.0
       max   : 5.0
       v     : 2.0
     - name  : minimum_lookahead_distance
-      desc  : minimum_lookahead_distance desc sample
+      desc  : minimum lookahead distance in waypoint mode
       label : minimum_lookahead_distance
       min   : 0.0
       max   : 20.0
       v     : 6.0
     - name  : displacement_threshold
-      desc  : displacement_threshold desc sample
+      desc  : displacement_threshold
       label : displacement_threshold
       min   : 0
       max   : 1.0
       v     : 0.0
     - name  : relative_angle_threshold
-      desc  : relative_angle_threshold desc sample
+      desc  : relative_angle_threshold
       label : relative_angle_threshold
       min   : 0
       max   : 90
       v     : 0
     - name    : is_linear_interpolation
-      desc    : linear_interpolate_mode desc sample
+      desc    : use linear interpolation when calculate target waypoint
       label   : 'Linear Interpolation'
       kind    : checkbox
       v       : True
@@ -1631,10 +1639,10 @@ params :
         dash        : ''
         delim       : ':='
     - name    : publishes_for_steering_robot
-      desc    : linear_interpolate_mode desc sample
+      desc    : publish ctrl_cmd
       label   : 'Publishes topic for steering robot'
       kind    : checkbox
-      v       : False
+      v       : True
       cmd_param :
         dash        : ''
         delim       : ':='
@@ -1874,15 +1882,6 @@ params :
       min   : 10.0
       max   : 45.0
       v     : 35.0
-      cmd_param :
-        dash        : ''
-        delim       : ':='
-    - name  : steering_gear_ratio
-      desc  : steering_gear_ratio
-      label : steering gear ratio [-]
-      min   : 0.0
-      max   : 100.0
-      v     : 20.0
       cmd_param :
         dash        : ''
         delim       : ':='
@@ -2167,7 +2166,7 @@ params :
       label   : 'lateral_accel_limit :'
       min   : 0
       max   : 5.0
-      v         : 0.8
+      v         : 5.0
     - name    : lowpass_gain_linear_x
       desc    : lowpass_gain_linear_x  desc sample
       label   : 'lowpass_gain_linear_x :'
@@ -2750,6 +2749,15 @@ params :
       min       : 1.0
       max       : 50
       v         : 10.0
+    - name      : search_closest_waypoint_minimum_dt
+      desc      : Minimum number of lookahead waypoints when searching closest_waypoint
+      label     : Search Closest Waypoint Minimum Lookahead Number
+      min       : 1
+      max       : 100
+      v         : 5
+      cmd_param:
+        dash  : ''
+        delim : ':='
 
   - name  : astar_navi_param
     vars  :
@@ -3822,7 +3830,7 @@ params :
       descs : When you save the velocity in each waypoints, Please check if /current_velocity is publishing
       label : Save /current_velocity
       kind    : checkbox
-      v       : False
+      v       : True
       cmd_param :
         dash        : ''
         delim       : ':='
@@ -5882,6 +5890,24 @@ params :
       cmd_param :
         dash      : ''
         delim     : ':='
+    - name      : input_pose_name
+      desc      : input_pose_name (geometry_msgs/PoseStamped)
+      label     : input_pose_name
+      v         : /ndt_pose
+      kind  : topic
+      topic_type : geometry_msgs/PoseStamped
+      cmd_param :
+        dash      : ''
+        delim     : ':='
+    - name      : input_pose_with_cov_name
+      desc      : input_pose_with_cov_name (geometry_msgs/PoseWithCovarianceStamped)
+      label     : input_pose_with_cov_name
+      v         : /ndt_pose_with_covariance
+      kind  : topic
+      topic_type : geometry_msgs/PoseWithCovarianceStamped
+      cmd_param :
+        dash      : ''
+        delim     : ':='
     - name  : pose_additional_delay
       desc  : delay time added to pose delay
       label : pose additional delay [s]
@@ -5942,6 +5968,15 @@ params :
       min   : 0.00
       max   : 0.5
       v     : 0.025
+      cmd_param :
+        dash      : ''
+        delim     : ':='
+    - name      : input_twist_name
+      desc      : input_twist_name (geometry_msgs/TwistStamped)
+      label     : input_twist_name
+      v         : /can_twist
+      kind  : topic
+      topic_type : geometry_msgs/TwistStamped
       cmd_param :
         dash      : ''
         delim     : ':='
@@ -6042,15 +6077,6 @@ params :
       min   : 0.1
       max   : 10.0
       v     : 2.9
-      cmd_param :
-        dash      : ''
-        delim     : ':='
-    - name  : steering_gear_ratio
-      desc  : tire to handle angle gear ratio
-      label : steering_gear_ratio
-      min   : 0.1
-      max   : 50.0
-      v     : 13.5
       cmd_param :
         dash      : ''
         delim     : ':='
