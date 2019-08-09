@@ -5756,6 +5756,15 @@ params :
       cmd_param :
         dash      : ''
         delim     : ':='
+    - name : use_ll2
+      desc : Use Lanelet2 Map
+      label: Lanelet2 (default VectorMap)
+      kind : checkbox
+      v    : False
+      cmd_param :
+        dash     : ''
+        delim    : ':='
+        only_enable : True
   - name  : lidar_cnn_baidu_params
     vars  :
     - name      : points_src
