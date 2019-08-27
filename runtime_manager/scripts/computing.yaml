@@ -383,7 +383,7 @@ subs :
 
     - name : costmap_generator
       desc : costmap_generator desc sample
-      cmd  : roslaunch costmap_generator costmap_generator.launch
+      cmd  : roslaunch costmap_generator costmap_generator_option.launch
       param: costmap_generator_param
       gui  :
         dialog_width  : 400
