@@ -281,7 +281,7 @@ subs :
       subs :
       - name : feat_proj
         desc : feat_proj desc sample
-        cmd  : roslaunch trafficlight_recognizer feat_proj.launch
+        cmd  : roslaunch trafficlight_recognizer feat_proj_option.launch
         param: feat_proj
         gui  :
           flags : [ need_camera_info ]
@@ -383,7 +383,7 @@ subs :
 
     - name : costmap_generator
       desc : costmap_generator desc sample
-      cmd  : roslaunch costmap_generator costmap_generator.launch
+      cmd  : roslaunch costmap_generator costmap_generator_option.launch
       param: costmap_generator_param
       gui  :
         dialog_width  : 400
@@ -418,7 +418,7 @@ subs :
         param: lane_navi
       - name : lane_rule
         desc : lane_rule desc sample
-        cmd  : rosrun lane_planner lane_rule
+        cmd  : roslaunch lane_planner lane_rule_option.launch
         param: lane_rule
       - name : lane_stop
         desc : lane_stop desc sample
@@ -578,7 +578,7 @@ subs :
         param: astar_avoid_param
       - name : velocity_set
         desc : velocity_set desc sample
-        cmd  : roslaunch waypoint_planner velocity_set.launch
+        cmd  : roslaunch waypoint_planner velocity_set_option.launch
         param: velocity_set
         gui  :
           use_crosswalk_detection : { border : 4, flags : [ all ] }
@@ -2020,6 +2020,14 @@ params :
       cmd_param :
         dash      : ''
         delim     : ':='
+    - name  : use_ll2
+      desc  : use lanelet2 map format for velocity set
+      label : Use Lanelet2 (default VectorMap)
+      kind  : checkbox
+      v     : False
+      cmd_param :
+        dash      : ''
+        delim     : ':='
     - name  : stop_distance_obstacle
       desc  : stop_distance_obstacle desc sample
       label : Stop Distance for Obstacle (m)
@@ -2474,7 +2482,14 @@ params :
       cmd_param :
         dash      : ''
         delim     : ':='
-
+    - name      : use_ll2
+      desc      : Use Lanelet2 map format
+      label     : Lanelet2 (default VectorMap)
+      kind      : checkbox
+      v         : False
+      cmd_param :
+        dash      : ''
+        delim     : ':='
 
   - name  : car_kf
     topic : /config/car_kf
@@ -2694,6 +2709,15 @@ params :
       min  : -100
       max  : 100
       v    : 0
+    - name : use_ll2
+      desc : Use Lanelet2 Map
+      label: Lanelet2 (default VectorMap)
+      kind : checkbox
+      v    : False
+      cmd_param :
+         dash     : ''
+         delim    : ':='
+         only_enable : True
     - name         : camera_id
       desc         : camera_id desc sample
       kind         : menu
@@ -2830,6 +2854,14 @@ params :
     topic : /config/lane_rule
     msg   : ConfigLaneRule
     vars  :
+    - name      : use_ll2
+      desc      : Use Lanelet2 map format
+      label     : Lanelet2 (default VectorMap)
+      kind      : checkbox
+      v         : False
+      cmd_param :
+        dash      : ''
+        delim     : ':='
     - name      : acceleration
       desc      : acceleration desc sample
       label     : Acceleration (m/s^2)
@@ -5888,6 +5920,15 @@ params :
       cmd_param :
         dash      : ''
         delim     : ':='
+    - name : use_ll2
+      desc : Use Lanelet2 Map
+      label: Lanelet2 (default VectorMap)
+      kind : checkbox
+      v    : False
+      cmd_param :
+        dash     : ''
+        delim    : ':='
+        only_enable : True
   - name  : lidar_cnn_baidu_params
     vars  :
     - name      : points_src
