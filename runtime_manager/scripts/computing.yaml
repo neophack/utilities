@@ -256,7 +256,7 @@ subs :
       subs :
         - name : imm_ukf_pda_track
           desc : imm_ukf_pda_track desc sample
-          cmd  : roslaunch imm_ukf_pda_track imm_ukf_pda_track.launch
+          cmd  : roslaunch imm_ukf_pda_track imm_ukf_pda_track_option.launch
           param: imm_ukf_pda_track_param
           gui  :
             dialog_width  : 600
@@ -267,6 +267,11 @@ subs :
               flags : [nl ]
             sync :
               func : self.button_synchronization.GetValue()
+            use_ll2:
+              depend : use_map_info
+              depend_bool : 'lambda v : v == 1'
+              flags : [ nl ]
+              prop  : 1
 
         - name : lidar_kf_contour_track
           desc : part of open planner perception package
@@ -1216,9 +1221,17 @@ params :
       cmd_param :
         dash      : ''
         delim     : ':='
-    - name      : use_vectormap
-      desc      : Use vectormap fot lane direction assisted tracking
-      label     : use_vectormap
+    - name      : use_map_info
+      desc      : Use map lane direction assisted tracking
+      label     : use_map_info
+      kind      : checkbox
+      v         : False
+      cmd_param :
+        dash      : ''
+        delim     : ':='
+    - name      : use_ll2
+      desc      : Use Lanelet2 map format
+      label     : Lanelet2 (default VectorMap)
       kind      : checkbox
       v         : False
       cmd_param :
