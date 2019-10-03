@@ -10,6 +10,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>autoware_map</build_depend>
+  <build_depend>autoware_build_flags</build_depend>
   <build_depend>autoware_map_msgs</build_depend>
   <build_depend>amathutils_lib</build_depend>
   <build_depend>geodesy</build_depend>
@@ -48,6 +49,8 @@
   <exec_depend>roscpp</exec_depend>
   <exec_depend>vector_map</exec_depend>
   <exec_depend>op_planner</exec_depend>
+
+  <depend> lanelet2_extension </depend>
 
   <export>
   </export>

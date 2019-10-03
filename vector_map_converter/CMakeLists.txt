@@ -8,6 +8,7 @@ project(vector_map_converter)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  autoware_build_flags
   amathutils_lib
   autoware_map
   autoware_map_msgs
@@ -18,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   lanelet2_projection
   lanelet2_routing
   lanelet2_traffic_rules
+  lanelet2_extension
   roscpp
   vector_map
   op_planner
@@ -30,11 +32,6 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-if(${CMAKE_VERSION} VERSION_LESS "3.8.0")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-else()
-  set(CMAKE_CXX_STANDARD 17)
-endif()
 
 include_directories(
   include
@@ -44,6 +41,7 @@ include_directories(
 add_executable(autowaremap2vectormap src/autoware2vectormap.cpp src/autoware2vectormap_core.cpp)
 add_executable(lanelet2autowaremap src/lanelet2autowaremap.cpp src/lanelet2autowaremap_core.cpp src/autoware2vectormap_core.cpp)
 add_executable(lanelet2vectormap src/lanelet2vectormap.cpp src/lanelet2vectormap_core.cpp src/lanelet2autowaremap_core.cpp src/autoware2vectormap_core.cpp)
+add_executable(autoware2laneletmap src/autoware2laneletmap.cpp src/autoware2laneletmap_core.cpp)
 
 add_executable(opendrive2autowaremap 
   src/opendrive2autowaremap_core/opendrive_loader.cpp
@@ -59,15 +57,18 @@ add_dependencies(autowaremap2vectormap ${${PROJECT_NAME}_EXPORTED_TARGETS} ${cat
 add_dependencies(lanelet2autowaremap ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(lanelet2vectormap ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(opendrive2autowaremap ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(autoware2laneletmap ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(autowaremap2vectormap ${catkin_LIBRARIES})
 target_link_libraries(lanelet2autowaremap ${catkin_LIBRARIES})
 target_link_libraries(lanelet2vectormap ${catkin_LIBRARIES})
 target_link_libraries(opendrive2autowaremap ${catkin_LIBRARIES})
+target_link_libraries(autoware2laneletmap ${catkin_LIBRARIES})
 
 ## Install executables and/or libraries
 install(TARGETS
         autowaremap2vectormap
+        autoware2laneletmap
         lanelet2autowaremap
         lanelet2vectormap
         opendrive2autowaremap
