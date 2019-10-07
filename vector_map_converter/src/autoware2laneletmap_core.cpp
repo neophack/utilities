@@ -86,6 +86,7 @@ void createDetectionArea(const autoware_map::AutowareMapHandler &awmap, lanelet:
         // lanelet::LineString3d linestring(getId(), polygon_points);
         lanelet::Polygon3d polygon(getId(), polygon_points);
         polygon.attributes()["type"] = "detection_area";
+        polygon.attributes()["area"] = "yes";
         
         polygons.push_back(polygon);
         polygon_map[awmap_relation.area_id] = polygon;
@@ -104,7 +105,7 @@ void createDetectionArea(const autoware_map::AutowareMapHandler &awmap, lanelet:
     auto detection_area = lanelet::autoware::DetectionArea::make(getId(), lanelet::AttributeMap(), polygons, stopline);
     lanelet_map_ptr->add(detection_area);
 
-    
+
   }  // Lane loop
 }
 
