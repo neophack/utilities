@@ -83,7 +83,7 @@ subs :
       desc : fusion_localizer desc sample
       subs :
       - name : ekf_localizer
-        desc : pose and twist fusion for robust localization 
+        desc : pose and twist fusion for robust localization
         cmd  : roslaunch ekf_localizer ekf_localizer.launch
         param : ekf_localizer_param
         gui  :
@@ -109,7 +109,7 @@ subs :
       desc : twist_generator
       subs :
       - name : vehicle_status_converter
-        desc : twist generator from vehicle_status 
+        desc : twist generator from vehicle_status
         cmd  : roslaunch twist_generator vehicle_status_converter.launch
         param : vehicle_status_converter_param
         gui  :
@@ -1123,18 +1123,18 @@ params :
       cmd_param :
         dash        : ''
         delim       : ':='
-    - name    : life_time_thres
-      desc    : life_time_thres_ desc sample
-      label   : 'life time thres'
+    - name    : life_time_threshold
+      desc    : The minimum frames for targets to be visualized
+      label   : 'life time threshold'
       min       : 1
       max       : 20
       v       : 8
       cmd_param :
         dash        : ''
         delim       : ':='
-    - name    : gating_thres
-      desc    : gating_thres_ desc sample
-      label   : 'gating thres'
+    - name    : gating_threshold
+      desc    : The value of gate threshold for measurement validation.
+      label   : 'gating threshold'
       min       : 0
       max       : 100
       v       : 9.22
@@ -1142,7 +1142,7 @@ params :
         dash        : ''
         delim       : ':='
     - name    : gate_probability
-      desc    : gate_probability_ desc sample
+      desc    : The probability that the gate contains the true measurement
       label   : 'gate probability'
       min       : 0
       max       : 1
@@ -1151,7 +1151,7 @@ params :
         dash        : ''
         delim       : ':='
     - name    : detection_probability
-      desc    : detection_probability_ desc sample
+      desc    : The probability that a target is detected
       label   : 'detection probability'
       min       : 0
       max       : 1
@@ -1159,45 +1159,45 @@ params :
       cmd_param :
         dash        : ''
         delim       : ':='
-    - name    : static_velocity_thres
-      desc    : static_velocity_thres_ desc sample
-      label   : 'static velocity thres'
+    - name    : static_velocity_threshold
+      desc    : The velocity threshold for classifying static/dynamic
+      label   : 'static velocity threshold'
       min       : 0
       max       : 10
       v       : 0.5
       cmd_param :
         dash        : ''
         delim       : ':='
-    - name    : static_num_history_thres
-      desc    : static_num_history_thres desc sample
-      label   : 'static num history thres'
+    - name    : static_num_history_threshold
+      desc    : The amount of frames the velocity is averaged over to compare to `static_velocity_threshold
+      label   : 'static num history threshold'
       min       : 0
       max       : 20
       v       : 3
       cmd_param :
         dash        : ''
         delim       : ':='
-    - name    : prevent_explosion_thres
+    - name    : prevent_explosion_threshold
       desc    : threshold for preventing ukf from explosion
-      label   : 'prevent explosion thres'
+      label   : 'prevent explosion threshold'
       min       : 0
       max       : 10000
       v       : 1000
       cmd_param :
         dash        : ''
         delim       : ':='
-    - name    : lane_direction_chi_thres
+    - name    : lane_direction_chi_threshold
       desc    : threshold for direction chi squared distribution
-      label   : 'lane direction chi thres'
+      label   : 'lane direction chi threshold'
       min       : 0.0
       max       : 20
       v       : 2.71
       cmd_param :
         dash        : ''
         delim       : ':='
-    - name    : nearest_lane_distance_thres
+    - name    : nearest_lane_distance_threshold
       desc    : threshold for nearest lane distance
-      label   : 'nearest lane distance thres'
+      label   : 'nearest lane distance threshold'
       min       : 0.0
       max       : 20
       v       : 1.0
@@ -1780,7 +1780,7 @@ params :
       - unconstraint_fast
       - qpoases_hotstart
       descs :
-      - unconstraint least square 
+      - unconstraint least square
       - unconstraint least square (fast, but low accuracy)
       - constraint with qpOASES hotstart
       choices_type : str
@@ -6103,7 +6103,7 @@ params :
         dash     : ''
         delim    : ':='
   - name : ekf_localizer_param
-    vars : 
+    vars :
     - name      : show_debug_info
       desc      : show_debug_info
       label     : show_debug_info
@@ -6302,7 +6302,7 @@ params :
         delim     : ':='
     - name  : proc_stddev_vx_c
       desc  : standard deviation of process noise for d(vx)/dt = 0
-      label : proc_stddev_vx 
+      label : proc_stddev_vx
       min   : 0.0
       max   : 10.0
       v     : 2.0
@@ -6319,7 +6319,7 @@ params :
         dash      : ''
         delim     : ':='
   - name : vehicle_status_converter_param
-    vars : 
+    vars :
     - name      : enable_adaptive_estimate
       desc      : enable adaptive coefficient estimation with /estimate_twist by recursive least square method
       label     : enable_adaptive_estimate
