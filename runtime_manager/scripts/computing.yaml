@@ -2753,7 +2753,6 @@ params :
       cmd_param :
          dash     : ''
          delim    : ':='
-         only_enable : True
     - name         : camera_id
       desc         : camera_id desc sample
       kind         : menu
