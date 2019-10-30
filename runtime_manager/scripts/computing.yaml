@@ -1399,6 +1399,14 @@ params :
       cmd_param :
         dash        : ''
         delim       : ':='
+    - name    : sim_mode
+      desc    : Enable simulation mode - plane origin at (0°, 0°)
+      label   : 'Simulation Mode'
+      kind    : checkbox
+      v       : False
+      cmd_param:
+        dash     : ''
+        delim    : ':='
 
   - name  : ndt
     topic : /config/ndt
