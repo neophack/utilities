@@ -15,13 +15,25 @@ using LineKey = vector_map::Key<vector_map::Line>;
 // using LaneKey = vector_map::Key<vector_map::Lane>;
 
 using lanelet::utils::getId;
+using V2L = std::map<int, lanelet::Id>;
+using L2V = std::map<lanelet::Id, int>;
+
+bool exists(std::unordered_set<lanelet::Id> set, lanelet::Id id)
+{
+  return set.find(id) != set.end();
+}
 
 void convertVectorMap2Lanelet2(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
 {
+  V2L v2l_id;
+  L2V l2v_id;
   const auto node2angle = getNode2Angle(vmap);
-  convertLanes(vmap, lmap, node2angle);
+  convertLanes(vmap, lmap, node2angle, &v2l_id, &l2v_id);
   addIntersectionTags(vmap, lmap);
   addCrossWalks(vmap, lmap);
+  connectLanelets(vmap, lmap, v2l_id, l2v_id);
+  transformPoint(lmap);
+  // SimplifyLineString(lmap);
 }
 
 lanelet::Point3d movePointByDirection(lanelet::Point3d p, double angle, double distance)
@@ -64,10 +76,10 @@ lanelet::Lanelet createLanelet(const VectorMap& vmap, const int lnid, const Node
   auto bn_angle = node2angle.at(bn.nid);
   auto fn_angle = node2angle.at(fn.nid);
 
-  auto left_p1 = movePointByDirection(lanelet_point_bn, bn_angle + M_PI / 2, left_width);
-  auto left_p2 = movePointByDirection(lanelet_point_fn, fn_angle + M_PI / 2, left_width);
-  auto right_p1 = movePointByDirection(lanelet_point_bn, bn_angle - M_PI / 2, right_width);
-  auto right_p2 = movePointByDirection(lanelet_point_fn, fn_angle - M_PI / 2, right_width);
+  auto left_p1 = movePointByDirection(lanelet_point_bn, bn_angle - M_PI / 2, left_width);
+  auto left_p2 = movePointByDirection(lanelet_point_fn, fn_angle - M_PI / 2, left_width);
+  auto right_p1 = movePointByDirection(lanelet_point_bn, bn_angle + M_PI / 2, right_width);
+  auto right_p2 = movePointByDirection(lanelet_point_fn, fn_angle + M_PI / 2, right_width);
 
   lanelet::LineString3d left_bound(getId(), { left_p1, left_p2 });
   lanelet::LineString3d right_bound(getId(), { right_p1, right_p2 });
@@ -109,12 +121,15 @@ Node2Angle getNode2Angle(const VectorMap& vmap)
   return node2angle;
 }
 
-void convertLanes(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap, const Node2Angle& node2angle)
+void convertLanes(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap, const Node2Angle& node2angle, V2L* v2l_id,
+                  L2V* l2v_id)
 {
   for (auto vmap_lane : vmap.findByFilter([](vector_map::Lane l) { return true; }))
   {
     const auto& lanelet = createLanelet(vmap, vmap_lane.lnid, node2angle);
     lmap->add(lanelet);
+    (*v2l_id)[vmap_lane.lnid] = lanelet.id();
+    (*l2v_id)[lanelet.id()] = vmap_lane.lnid;
   }
 }
 
@@ -183,7 +198,8 @@ lanelet::LineString3d convertToLineString(const VectorMap& vmap, int line_id)
   return lanelet::LineString3d(getId(), { p1, p2 });
 }
 
-lanelet::LineString3d convertToLineString(const VectorMap& vmap, std::pair<int, int> straight_line)
+lanelet::LineString3d convertToLineString(const VectorMap& vmap, std::pair<int, int> straight_line,
+                                          std::unordered_set<long int>& done)
 {
   auto line = vmap.findByKey(LineKey(straight_line.first));
   std::vector<lanelet::Point3d> points;
@@ -193,6 +209,7 @@ lanelet::LineString3d convertToLineString(const VectorMap& vmap, std::pair<int, 
 
   while (line.lid != 0 && line.blid != straight_line.second)
   {
+    done.insert(line.lid);
     auto fp = vmap.findByKey(PointKey(line.fpid));
     lanelet::Point3d p2(getId(), fp.bx, fp.ly, fp.h);
     points.push_back(p2);
@@ -271,6 +288,8 @@ lanelet::Lanelet convertCrosswalkToLanelet(const VectorMap& vmap, int area_id)
   std::pair<double, int> first_line, second_line;
   first_line.first = first_line.second = second_line.first, second_line.second = 0;
 
+  std::unordered_set<long int> done;
+
   while (line.lid != 0)
   {
     double length = getLineLength(vmap, line.lid);
@@ -281,19 +300,41 @@ lanelet::Lanelet convertCrosswalkToLanelet(const VectorMap& vmap, int area_id)
       first_line.first = length;
       first_line.second = line.lid;
     }
-    else if (length > second_line.first)
+    // else if (length > second_line.first)
+    // {
+    //   second_line.first = length;
+    //   second_line.second = line.lid;
+    // }
+    line = vmap.findByKey(LineKey(line.flid));
+  }
+  auto first_lines = combineStraightLines(vmap, first_line.second);
+  auto left_bound = convertToLineString(vmap, first_lines, done);
+
+  line = vmap.findByKey(LineKey(area.slid));
+  while (line.lid != 0)
+  {
+    if (exists(done, line.lid))
+    {
+      line = vmap.findByKey(LineKey(line.flid));
+      continue;
+    }
+    double length = getLineLength(vmap, line.lid);
+
+    if (length > second_line.first)
     {
       second_line.first = length;
       second_line.second = line.lid;
     }
+    // else if (length > second_line.first)
+    // {
+    //   second_line.first = length;
+    //   second_line.second = line.lid;
+    // }
     line = vmap.findByKey(LineKey(line.flid));
   }
-
-  auto first_lines = combineStraightLines(vmap, first_line.second);
   auto second_lines = combineStraightLines(vmap, second_line.second);
+  auto right_bound = convertToLineString(vmap, second_lines, done);
 
-  auto left_bound = convertToLineString(vmap, first_lines);
-  auto right_bound = convertToLineString(vmap, second_lines);
   lanelet::Lanelet llt(getId(), left_bound, right_bound);
   return llt;
 }
@@ -308,9 +349,10 @@ void addCrossWalks(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
     if (cw.type != 0)
       continue;
     auto crosswalk_llt = convertCrosswalkToLanelet(vmap, cw.aid);
-    crosswalks.push_back(crosswalk_llt);
+    crosswalk_llt.setAttribute("subtype", "crosswalk");
     lmap->add(crosswalk_llt);
     std::cout << crosswalk_llt << std::endl;
+    std::cout << lmap->laneletLayer.get(crosswalk_llt.id()).attributes()["subtype"] << std::endl;
   }
 }
 
@@ -338,69 +380,296 @@ void addIntersectionTags(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
       auto intersection_polygon2d = lanelet::utils::to2D(intersection).basicPolygon();
       if (lanelet::geometry::distance(llt_polygon2d, intersection_polygon2d) < std::numeric_limits<double>::epsilon())
       {
-        llt.attributes()["within_crosswalk"] = "yes";
+        llt.attributes()["within_crosswalk"] = true;
       }
     }
   }
 }
 
-bool exists(std::unordered_set<lanelet::Id> set, lanelet::Id id)
+bool getNextLanelet(const VectorMap& vmap, const lanelet::LaneletMapPtr& lmap, const V2L& v2l_id, const L2V& l2v_id,
+                    const lanelet::ConstLanelet llt, lanelet::ConstLanelet* next_llt)
 {
-  return set.find(id) != set.end();
+  try
+  {
+    int lnid = l2v_id.at(llt.id());
+    auto vmap_lane = vmap.findByKey(LaneKey(lnid));
+    if (vmap_lane.lnid == 0)
+      return false;
+    if (vmap_lane.flid2 != 0)
+      return false;
+    auto vmap_next_lane = vmap.findByKey(LaneKey(vmap_lane.flid));
+    if (vmap_next_lane.lnid == 0)
+      return false;
+    if (vmap_next_lane.blid2 != 0)
+      return false;
+    auto next_llt_id = v2l_id.at(vmap_next_lane.lnid);
+    *next_llt = lmap->laneletLayer.get(next_llt_id);
+
+    if (llt.attributeOr("within_crosswalk", false) != next_llt->attributeOr("within_crosswalk", false))
+    {
+      return false;
+    }
+  }
+  catch (std::out_of_range& err)
+  {
+    std::cout << err.what() << std::endl;
+    return false;
+  }
+
+  return true;
 }
 
-bool getNextLanelet(const lanelet::ConstLanelet llt, lanelet::ConstLanelet* next_llt)
+bool getPreviousLanelet(const VectorMap& vmap, const lanelet::LaneletMapPtr& lmap, const V2L& v2l_id, const L2V& l2v_id,
+                        const lanelet::ConstLanelet llt, lanelet::ConstLanelet* prev_llt)
 {
-  lnid = l2v_id.at(llt.id());
-  auto vmap_lane = vmap.findByKey(LaneKey(lnid));
-  auto vmap_next_lane = vmap.findByKey(LaneKey(vmap_lane.flid));
-  auto next_llt_id = v2l_id.at(vmap_next_lane.lnid);
-  next_llt = lmap->laneletLayer.get(next_llt_id);
+  try
+  {
+    int lnid = l2v_id.at(llt.id());
+    auto vmap_lane = vmap.findByKey(LaneKey(lnid));
+    if (vmap_lane.lnid == 0)
+      return false;
+    if (vmap_lane.blid2 != 0)
+      return false;
+    auto vmap_prev_lane = vmap.findByKey(LaneKey(vmap_lane.blid));
+    if (vmap_prev_lane.lnid == 0)
+      return false;
+    if (vmap_prev_lane.flid2 != 0)
+      return false;
+    auto prev_llt_id = v2l_id.at(vmap_prev_lane.lnid);
+    *prev_llt = lmap->laneletLayer.get(prev_llt_id);
+    if (llt.attributeOr("within_crosswalk", false) != prev_llt->attributeOr("within_crosswalk", false))
+    {
+      return false;
+    }
+  }
+  catch (std::out_of_range& err)
+  {
+    std::cout << err.what() << std::endl;
+    return false;
+  }
+
+  return true;
 }
 
-
-void connectLanelets()
+lanelet::Lanelet combineLanelets(lanelet::Lanelets lanelets)
 {
-  std::vector<lanelet::ConstLanelets> lanelets_array;
+  std::vector<lanelet::Point3d> left_points, right_points;
+  for (auto& llt : lanelets)
+  {
+    auto left_bound = llt.leftBound();
+    auto right_bound = llt.rightBound();
+    for (int i = 0; i < left_bound.size() - 1; i++)
+    {
+      left_points.push_back(left_bound[i]);
+    }
+    for (int i = 0; i < right_bound.size() - 1; i++)
+    {
+      right_points.push_back(right_bound[i]);
+    }
+  }
+
+  if (!lanelets.empty())
+  {
+    auto end = lanelets.back();
+    auto left_bound = end.leftBound();
+    auto right_bound = end.rightBound();
+    left_points.push_back(left_bound.back());
+    right_points.push_back(right_bound.back());
+  }
+
+  lanelet::LineString3d left(getId(), left_points);
+  lanelet::LineString3d right(getId(), right_points);
+
+  SimplifyLineString(left);
+  SimplifyLineString(right);
+
+  lanelet::Lanelet lanelet(getId(), left, right);
+  return lanelet;
+}
+
+void connectLanelets(const VectorMap& vmap, const lanelet::LaneletMapPtr& lmap, const V2L& v2l_id, const L2V& l2v_id)
+{
+  std::vector<lanelet::Lanelets> lanelets_array;
   std::unordered_set<lanelet::Id> done;
+
+  lanelet::LaneletMapPtr new_map(new lanelet::LaneletMap);
 
   for (const auto& llt : lmap->laneletLayer)
   {
-    if (done.exists(llt.id))
+    if (exists(done, llt.id()))
     {
       continue;
     }
     done.insert(llt.id());
+    if (llt.hasAttribute("subtype"))
+    {
+      std::cout << "crosswalk" << llt.id() << std::endl;
+      new_map->add(llt);
+      continue;
+    }
 
-    lanelet::ConstLanelets backward;
-    lanelet::ConstLanelet prev_llt;
-    lanelet::ConstLanelet current_llt = llt;
-    while (getPreviousLanelet(lmap, vmap, l2v_id, v2l_id, current_llt, &prev_llt))
+    lanelet::Lanelets backward;
+    lanelet::Lanelet prev_llt;
+    lanelet::Lanelet current_llt = llt;
+    while (getPreviousLanelet(vmap, lmap, v2l_id, l2v_id, current_llt, &prev_llt))
     {
       backward.push_back(prev_llt);
-      done.insert(prev_llt.id()) current_llt = prev_llt;
+      done.insert(prev_llt.id());
+      current_llt = prev_llt;
     }
     std::reverse(backward.begin(), backward.end());
 
-    lanelet::ConstLanelets forward;
-    lanelet::ConstLanelet next_llt;
+    lanelet::Lanelets forward;
+    lanelet::Lanelet next_llt;
     current_llt = llt;
-    while (getNextLanelet(lmap, vmap, l2v_id, v2l_id, current_llt, &next_llt))
+    while (getNextLanelet(vmap, lmap, v2l_id, l2v_id, current_llt, &next_llt))
     {
       forward.push_back(next_llt);
-      done.insert(next_llt.id()) current_llt = next_llt;
+      done.insert(next_llt.id());
+      current_llt = next_llt;
     }
 
-    lanelet::ConstLanelets connected_lanelets;
+    lanelet::Lanelets connected_lanelets;
     connected_lanelets.insert(connected_lanelets.end(), backward.begin(), backward.end());
     connected_lanelets.push_back(llt);
     connected_lanelets.insert(connected_lanelets.end(), forward.begin(), forward.end());
-    lanelets_array(connected_lanelets);
+    lanelets_array.push_back(connected_lanelets);
   }
 
-  for(const auto& array : lanelets_array)
+  for (const auto& array : lanelets_array)
   {
-    lanelet::ConstLanelet connected_lanelet = combine_lanelets(array);
-    lmap->add(connected_lanelet);
+    lanelet::Lanelet connected_lanelet = combineLanelets(array);
+    connected_lanelet.attributes()["subtype"] = "road";
+    new_map->add(connected_lanelet);
+  }
+  *lmap = std::move(*new_map);
+}
+
+void transformPoint(lanelet::LaneletMapPtr& lmap)
+{
+  for (auto& point : lmap->pointLayer)
+  {
+    double tmp_x = point.x();
+    point.x() = point.y();
+    point.y() = tmp_x;
+    point.attributes()["local_x"] = point.x();
+    point.attributes()["local_y"] = point.y();
   }
 }
+
+double getAngle(const lanelet::Point3d& p1, const lanelet::Point3d& p2)
+{
+  return std::atan2(p2.y() - p1.y(), p2.x() - p1.x());
+}
+
+void SimplifyLineString(lanelet::LineString3d& line)
+{
+  std::vector<lanelet::Point3d> points;
+  for (auto& pt : line)
+  {
+    points.push_back(pt);
+  }
+  std::unordered_set<lanelet::Id> remove_ids;
+
+  auto prev_point = points.at(0);
+  double prev_angle = 0;
+  bool is_ready = true;
+  for (auto& pt : points)
+  {
+    if (pt == prev_point)
+      continue;
+
+    if (!is_ready)
+    {
+      is_ready = true;
+      prev_angle = getAngle(prev_point, pt);
+      prev_point = pt;
+      continue;
+    }
+
+    double current_angle = getAngle(prev_point, pt);
+
+    if (angleDiff(prev_angle, current_angle) < M_PI / 360)
+    {
+      remove_ids.insert(prev_point.id());
+    }
+    else
+    {
+      prev_angle = current_angle;
+    }
+    prev_point = pt;
+  }
+
+  auto result =
+      std::remove_if(points.begin(), points.end(), [&](lanelet::Point3d pt) { return exists(remove_ids, pt.id()); });
+  points.erase(result, points.end());
+
+  lanelet::LineString3d new_line(line.id(), points);
+  line = new_line;
+}
+
+void SimplifyLineString(lanelet::LaneletMapPtr& lmap)
+{
+  for (auto& line : lmap->lineStringLayer)
+  {
+    SimplifyLineString(line);
+  }
+}
+//
+// lanelet::Point3d convertSignalToPoint(const VectorMap& vmap, int id)
+// {
+//   auto signal = vmap.findByKey(SignalKey(id));
+//   auto signal_vector = vmap.findByKey(VectorKey(signal.vid));
+//   auto signal_point = vmap.findByKey(PointKey(signal_vector.pid));
+//
+//   lanelet::Point3d pt(getId(), signal_point.bx, signal_point.ly, signal_point.h);
+//
+//   switch (signal.type % 10)
+//   {
+//     case 1:
+//       pt.attributes()["color"] = "red";
+//       break;
+//     case 2:
+//       pt.attributes()["color"] = "green";
+//       break;
+//     case 3:
+//       pt.attributes()["color"] = "yellow";
+//       break;
+//   }
+//
+//   if (signal.type > 20)
+//   {
+//     pt.attributes()["arrow"] = "left";
+//   }
+//
+//   return pt;
+// }
+//
+// void addTrafficLights()
+// {
+//   auto vmap_signals = vmap.findByFilter([](vector_map::Signal s) { return true; });
+//   std::unordered_map<int> done;
+//   for (const auto& signal : vmap_signals)
+//   {
+//     if (signal.type > 3 && signal.type < 20)
+//     {
+//       continue;
+//     }
+//     if (exists(done, signal.id))
+//     {
+//       continue;
+//     }
+//     const auto signals = vmap.findByFilter([signal](vector_map::Signal s) { return s.linkid == signal.linkid });
+//     std::vector<lanelet::Point3d> points;
+//     for (const auto& s : signals)
+//     {
+//       done.insert(s.id);
+//       lanelet::Point3d pt = convertSignalToPoint(vmap, s.id);
+//       points.push_back(pt);
+//     }
+//
+//     lanelet::LineString3d light_bulb(getId, points);
+//     lanelet::LineString3d base = getTrafficLightBase(light_bulb);
+//     lanelet::LineString3d traffic_light(getId, base);
+//   }
+// }
