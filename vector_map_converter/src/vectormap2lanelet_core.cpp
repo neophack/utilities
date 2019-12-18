@@ -33,7 +33,7 @@ void convertVectorMap2Lanelet2(const VectorMap& vmap, lanelet::LaneletMapPtr& lm
   addIntersectionTags(vmap, lmap);
   addCrossWalks(vmap, lmap);
   connectLanelets(vmap, lmap, v2l_id, l2v_id);
-  addTrafficLights(vmap,lmap);
+  addTrafficLights(vmap, lmap);
   transformPoint(lmap);
   // SimplifyLineString(lmap);
 }
@@ -655,7 +655,7 @@ lanelet::LineString3d getTrafficLightBase(const lanelet::LineString3d light_bulb
   lanelet::Point3d pt_red;
   bool found_green = false;
   bool found_red = false;
-  double radius = 0.8;
+  double radius = 0.4;
   for (const auto& pt : light_bulb)
   {
     if (pt.z() < min_height)
@@ -744,20 +744,29 @@ void addTrafficLights(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
     lanelet::LineString3d light_bulb(getId(), points);
     light_bulb.attributes()["type"] = "light_bulbs";
     lanelet::LineString3d base = getTrafficLightBase(light_bulb);
-    // if(base.id() == 0)
-    // {
-    //   std::cout << "is invalid" << std::endl;
-    //   continue;
-    // }
-    // light_bulb.attributes()["traffic_light_id"] = base.id();
-    // for (const auto& vmap_stopline : vmap_stoplines)
-    // {
+    if (base.id() == 0)
+    {
+      std::cout << "is invalid" << std::endl;
+      continue;
+    }
+    light_bulb.attributes()["traffic_light_id"] = base.id();
+    for (const auto& vmap_stopline : vmap_stoplines)
+    {
       auto stop_line = convertToLineString(vmap, vmap_stopline.lid);
       stop_line.attributes()["type"] = "stop_line";
       auto tl = lanelet::autoware::AutowareTrafficLight::make(getId(), lanelet::AttributeMap(), { base }, stop_line,
                                                               { light_bulb });
       lmap->add(tl);
       std::cout << "ADDED" << std::endl;
-    // }
+    }
+    if (vmap_stoplines.empty())
+    {
+      lanelet::LineString3d stop_line;
+      auto tl = lanelet::autoware::AutowareTrafficLight::make(getId(), lanelet::AttributeMap(), { base }, stop_line,
+                                                              { light_bulb });
+      tl->removeStopLine();
+      lmap->add(tl);
+      std::cout << "ADDED" << std::endl;
+    }
   }
 }
