@@ -3,7 +3,7 @@
   <name>vector_map_converter</name>
   <version>0.1.0</version>
   <description>This package contains tools to convert different map formats.</description>
-  
+
   <maintainer email="mitsudome-r@todo.todo">mitsudome-r</maintainer>
 
   <license>Apache 2</license>
@@ -48,6 +48,7 @@
   <exec_depend>roscpp</exec_depend>
   <exec_depend>vector_map</exec_depend>
   <exec_depend>op_planner</exec_depend>
+  <depend>lanelet2_extension</depend>
 
   <export>
   </export>

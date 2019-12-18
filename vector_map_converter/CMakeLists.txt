@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   lanelet2_projection
   lanelet2_routing
   lanelet2_traffic_rules
+  lanelet2_extension
   roscpp
   vector_map
   op_planner

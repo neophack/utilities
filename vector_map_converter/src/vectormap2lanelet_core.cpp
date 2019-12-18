@@ -1,5 +1,6 @@
 
 #include <vector_map_converter/vectormap2lanelet.hpp>
+#include <lanelet2_extension/regulatory_elements/autoware_traffic_light.h>
 
 using VectorMap = vector_map::VectorMap;
 using Node2Angle = std::unordered_map<int, double>;
@@ -9,9 +10,9 @@ using PointKey = vector_map::Key<vector_map::Point>;
 using DTLaneKey = vector_map::Key<vector_map::DTLane>;
 using AreaKey = vector_map::Key<vector_map::Area>;
 using LineKey = vector_map::Key<vector_map::Line>;
-// using LaneKey = vector_map::Key<vector_map::Lane>;
-// using LaneKey = vector_map::Key<vector_map::Lane>;
-// using LaneKey = vector_map::Key<vector_map::Lane>;
+using SignalKey = vector_map::Key<vector_map::Signal>;
+using VectorKey = vector_map::Key<vector_map::Vector>;
+using StopLineKey = vector_map::Key<vector_map::StopLine>;
 // using LaneKey = vector_map::Key<vector_map::Lane>;
 
 using lanelet::utils::getId;
@@ -32,6 +33,7 @@ void convertVectorMap2Lanelet2(const VectorMap& vmap, lanelet::LaneletMapPtr& lm
   addIntersectionTags(vmap, lmap);
   addCrossWalks(vmap, lmap);
   connectLanelets(vmap, lmap, v2l_id, l2v_id);
+  addTrafficLights(vmap,lmap);
   transformPoint(lmap);
   // SimplifyLineString(lmap);
 }
@@ -615,61 +617,147 @@ void SimplifyLineString(lanelet::LaneletMapPtr& lmap)
     SimplifyLineString(line);
   }
 }
-//
-// lanelet::Point3d convertSignalToPoint(const VectorMap& vmap, int id)
-// {
-//   auto signal = vmap.findByKey(SignalKey(id));
-//   auto signal_vector = vmap.findByKey(VectorKey(signal.vid));
-//   auto signal_point = vmap.findByKey(PointKey(signal_vector.pid));
-//
-//   lanelet::Point3d pt(getId(), signal_point.bx, signal_point.ly, signal_point.h);
-//
-//   switch (signal.type % 10)
-//   {
-//     case 1:
-//       pt.attributes()["color"] = "red";
-//       break;
-//     case 2:
-//       pt.attributes()["color"] = "green";
-//       break;
-//     case 3:
-//       pt.attributes()["color"] = "yellow";
-//       break;
-//   }
-//
-//   if (signal.type > 20)
-//   {
-//     pt.attributes()["arrow"] = "left";
-//   }
-//
-//   return pt;
-// }
-//
-// void addTrafficLights()
-// {
-//   auto vmap_signals = vmap.findByFilter([](vector_map::Signal s) { return true; });
-//   std::unordered_map<int> done;
-//   for (const auto& signal : vmap_signals)
-//   {
-//     if (signal.type > 3 && signal.type < 20)
-//     {
-//       continue;
-//     }
-//     if (exists(done, signal.id))
-//     {
-//       continue;
-//     }
-//     const auto signals = vmap.findByFilter([signal](vector_map::Signal s) { return s.linkid == signal.linkid });
-//     std::vector<lanelet::Point3d> points;
-//     for (const auto& s : signals)
-//     {
-//       done.insert(s.id);
-//       lanelet::Point3d pt = convertSignalToPoint(vmap, s.id);
-//       points.push_back(pt);
-//     }
-//
-//     lanelet::LineString3d light_bulb(getId, points);
-//     lanelet::LineString3d base = getTrafficLightBase(light_bulb);
-//     lanelet::LineString3d traffic_light(getId, base);
-//   }
-// }
+
+lanelet::Point3d convertSignalToPoint(const VectorMap& vmap, int id)
+{
+  auto signal = vmap.findByKey(SignalKey(id));
+  auto signal_vector = vmap.findByKey(VectorKey(signal.vid));
+  auto signal_point = vmap.findByKey(PointKey(signal_vector.pid));
+
+  lanelet::Point3d pt(getId(), signal_point.bx, signal_point.ly, signal_point.h);
+
+  switch (signal.type % 10)
+  {
+    case 1:
+      pt.attributes()["color"] = "red";
+      break;
+    case 2:
+      pt.attributes()["color"] = "green";
+      break;
+    case 3:
+      pt.attributes()["color"] = "yellow";
+      break;
+  }
+
+  if (signal.type > 20)
+  {
+    pt.attributes()["arrow"] = "left";
+  }
+
+  return pt;
+}
+
+lanelet::LineString3d getTrafficLightBase(const lanelet::LineString3d light_bulb)
+{
+  double min_height = std::numeric_limits<double>::max();
+  double max_height = std::numeric_limits<double>::min();
+  lanelet::Point3d pt_green;
+  lanelet::Point3d pt_red;
+  bool found_green = false;
+  bool found_red = false;
+  double radius = 0.8;
+  for (const auto& pt : light_bulb)
+  {
+    if (pt.z() < min_height)
+    {
+      min_height = pt.z();
+    }
+    if (pt.z() > max_height)
+    {
+      max_height = pt.z();
+    }
+    std::string color = pt.attributeOr("color", "none");
+    if (color.compare("green") == 0)
+    {
+      found_green = true;
+      pt_green.x() = pt.x();
+      pt_green.y() = pt.y();
+    }
+    if (color.compare("red") == 0)
+    {
+      found_red = true;
+      pt_red.x() = pt.x();
+      pt_red.y() = pt.y();
+    }
+  }
+  if (!found_green || !found_red)
+  {
+    ROS_ERROR("could not found base line for traffic light!!!!");
+    lanelet::LineString3d base_line;
+    return base_line;
+  }
+
+  lanelet::BasicPoint3d direction;
+  direction.x() = pt_red.x() - pt_green.x();
+  direction.y() = pt_red.y() - pt_green.y();
+  double length = std::hypot(direction.y(), direction.x());
+  direction.x() = direction.x() / length;
+  direction.y() = direction.y() / length;
+
+  lanelet::Point3d p1(getId());
+  p1.x() = pt_green.x() - direction.x() * radius;
+  p1.y() = pt_green.y() - direction.y() * radius;
+  p1.z() = min_height - radius;
+
+  lanelet::Point3d p2(getId());
+  p2.x() = pt_red.x() + direction.x() * radius;
+  p2.y() = pt_red.y() + direction.y() * radius;
+  p2.z() = min_height - radius;
+
+  lanelet::LineString3d base_line(getId(), { p1, p2 });
+  base_line.attributes()["height"] = max_height - min_height + radius * 2;
+  return base_line;
+}
+
+void addTrafficLights(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
+{
+  auto vmap_signals = vmap.findByFilter([](vector_map::Signal s) { return true; });
+  std::unordered_set<long int> done;
+  for (const auto& signal : vmap_signals)
+  {
+    if (signal.type > 3 && signal.type < 20)
+    {
+      continue;
+    }
+    if (exists(done, signal.id))
+    {
+      continue;
+    }
+    const auto signals = vmap.findByFilter([signal](vector_map::Signal s) { return s.linkid == signal.linkid; });
+    std::vector<lanelet::Point3d> points;
+    for (const auto& s : signals)
+    {
+      done.insert(s.id);
+      lanelet::Point3d pt = convertSignalToPoint(vmap, s.id);
+      points.push_back(pt);
+    }
+
+    const auto vmap_stoplines = vmap.findByFilter([signals](vector_map::StopLine l) {
+      for (const auto& s : signals)
+      {
+        if (l.tlid == s.vid)
+          return true;
+      }
+      return false;
+    });
+
+    lanelet::LineString3d light_bulb(getId(), points);
+    light_bulb.attributes()["type"] = "light_bulbs";
+    lanelet::LineString3d base = getTrafficLightBase(light_bulb);
+    // if(base.id() == 0)
+    // {
+    //   std::cout << "is invalid" << std::endl;
+    //   continue;
+    // }
+    // light_bulb.attributes()["traffic_light_id"] = base.id();
+    // for (const auto& vmap_stopline : vmap_stoplines)
+    // {
+      auto stop_line = convertToLineString(vmap, vmap_stopline.lid);
+      stop_line.attributes()["type"] = "stop_line";
+      auto tl = lanelet::autoware::AutowareTrafficLight::make(getId(), lanelet::AttributeMap(), { base }, stop_line,
+                                                              { light_bulb });
+      lmap->add(tl);
+      std::cout << "ADDED" << std::endl;
+    // }
+  }
+}
