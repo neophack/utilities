@@ -24,18 +24,63 @@ bool exists(std::unordered_set<lanelet::Id> set, lanelet::Id id)
   return set.find(id) != set.end();
 }
 
-void convertVectorMap2Lanelet2(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
+void convertVectorMap2Lanelet2(const VectorMap &vmap, lanelet::LaneletMapPtr &lmap)
 {
   V2L v2l_id;
   L2V l2v_id;
   const auto node2angle = getNode2Angle(vmap);
   convertLanes(vmap, lmap, node2angle, &v2l_id, &l2v_id);
-  addIntersectionTags(vmap, lmap);
+  // addIntersectionTags(vmap, lmap);
   addCrossWalks(vmap, lmap);
+  combinePoints(lmap);
   connectLanelets(vmap, lmap, v2l_id, l2v_id);
   addTrafficLights(vmap, lmap);
   transformPoint(lmap);
   // SimplifyLineString(lmap);
+}
+
+void combinePoints(lanelet::LaneletMapPtr &lmap)
+{
+  lanelet::Lanelets lanelets;
+  for (lanelet::Lanelet &lanelet : lmap->laneletLayer)
+  {
+    lanelets.push_back(lanelet);
+  }
+
+  for (size_t i = 0; i < lanelets.size(); i++)
+  {
+    lanelet::Lanelet &llt = lanelets.at(i);
+    for (size_t j = 0; j < lanelets.size(); j++)
+    {
+      if (i == j)
+        continue;
+      lanelet::Lanelet &llt2 = lanelets.at(j);
+      if (lanelet::geometry::distance(llt.leftBound().front(), llt2.leftBound().back()) <= std::numeric_limits<double>::epsilon() &&
+          lanelet::geometry::distance(llt.rightBound().front(), llt2.rightBound().back()) <= std::numeric_limits<double>::epsilon())
+      {
+        llt.leftBound().front() = llt2.leftBound().back();
+        llt.rightBound().front() = llt2.rightBound().back();
+        break;
+      }
+    }
+  }
+  for (size_t i = 0; i < lanelets.size(); i++)
+  {
+    lanelet::Lanelet &llt = lanelets.at(i);
+    for (size_t j = 0; j < lanelets.size(); j++)
+    {
+      if (i == j)
+        continue;
+      lanelet::Lanelet &llt2 = lanelets.at(j);
+      if (lanelet::geometry::distance(llt.leftBound().back(), llt2.leftBound().front()) <= std::numeric_limits<double>::epsilon() &&
+          lanelet::geometry::distance(llt.rightBound().back(), llt2.rightBound().front()) <= std::numeric_limits<double>::epsilon())
+      {
+        llt.leftBound().back() = llt2.leftBound().front();
+        llt.rightBound().back() = llt2.rightBound().front();
+        break;
+      }
+    }
+  }
 }
 
 lanelet::Point3d movePointByDirection(lanelet::Point3d p, double angle, double distance)
@@ -53,14 +98,14 @@ lanelet::Point3d movePointByDirection(lanelet::Point3d p, double angle, double d
   return moved_point;
 }
 
-lanelet::Lanelet createLanelet(const VectorMap& vmap, const int lnid, const Node2Angle& node2angle)
+lanelet::Lanelet createLanelet(const VectorMap &vmap, const int lnid, const Node2Angle &node2angle)
 {
-  const auto& ln = vmap.findByKey(LaneKey(lnid));
-  const auto& bn = vmap.findByKey(NodeKey(ln.bnid));
-  const auto& bn_point = vmap.findByKey(PointKey(bn.pid));
-  const auto& fn = vmap.findByKey(NodeKey(ln.fnid));
-  const auto& fn_point = vmap.findByKey(PointKey(fn.pid));
-  const auto& dtlane = vmap.findByKey(DTLaneKey(ln.did));
+  const auto &ln = vmap.findByKey(LaneKey(lnid));
+  const auto &bn = vmap.findByKey(NodeKey(ln.bnid));
+  const auto &bn_point = vmap.findByKey(PointKey(bn.pid));
+  const auto &fn = vmap.findByKey(NodeKey(ln.fnid));
+  const auto &fn_point = vmap.findByKey(PointKey(fn.pid));
+  const auto &dtlane = vmap.findByKey(DTLaneKey(ln.did));
   double left_width = 1.5;
   double right_width = 1.5;
 
@@ -83,25 +128,25 @@ lanelet::Lanelet createLanelet(const VectorMap& vmap, const int lnid, const Node
   auto right_p1 = movePointByDirection(lanelet_point_bn, bn_angle + M_PI / 2, right_width);
   auto right_p2 = movePointByDirection(lanelet_point_fn, fn_angle + M_PI / 2, right_width);
 
-  lanelet::LineString3d left_bound(getId(), { left_p1, left_p2 });
-  lanelet::LineString3d right_bound(getId(), { right_p1, right_p2 });
+  lanelet::LineString3d left_bound(getId(), {left_p1, left_p2});
+  lanelet::LineString3d right_bound(getId(), {right_p1, right_p2});
 
   lanelet::Lanelet lanelet(getId(), left_bound, right_bound);
   return lanelet;
 }
 
-double getLaneAngle(const VectorMap& vmap, int lnid)
+double getLaneAngle(const VectorMap &vmap, int lnid)
 {
-  const auto& ln = vmap.findByKey(LaneKey(lnid));
-  const auto& bn = vmap.findByKey(NodeKey(ln.bnid));
-  const auto& bn_point = vmap.findByKey(PointKey(bn.pid));
-  const auto& fn = vmap.findByKey(NodeKey(ln.fnid));
-  const auto& fn_point = vmap.findByKey(PointKey(fn.pid));
+  const auto &ln = vmap.findByKey(LaneKey(lnid));
+  const auto &bn = vmap.findByKey(NodeKey(ln.bnid));
+  const auto &bn_point = vmap.findByKey(PointKey(bn.pid));
+  const auto &fn = vmap.findByKey(NodeKey(ln.fnid));
+  const auto &fn_point = vmap.findByKey(PointKey(fn.pid));
 
   return std::atan2(fn_point.ly - bn_point.ly, fn_point.bx - bn_point.bx);
 }
 
-Node2Angle getNode2Angle(const VectorMap& vmap)
+Node2Angle getNode2Angle(const VectorMap &vmap)
 {
   Node2Angle node2angle;
   for (auto vmap_node : vmap.findByFilter([](vector_map::Node n) { return true; }))
@@ -110,11 +155,11 @@ Node2Angle getNode2Angle(const VectorMap& vmap)
     auto f_lanes = vmap.findByFilter([&](vector_map::Lane l) { return l.fnid == vmap_node.nid; });
 
     std::vector<double> angles;
-    for (const auto& l : b_lanes)
+    for (const auto &l : b_lanes)
     {
       angles.push_back(getLaneAngle(vmap, l.lnid));
     }
-    for (const auto& l : f_lanes)
+    for (const auto &l : f_lanes)
     {
       angles.push_back(getLaneAngle(vmap, l.lnid));
     }
@@ -123,19 +168,19 @@ Node2Angle getNode2Angle(const VectorMap& vmap)
   return node2angle;
 }
 
-void convertLanes(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap, const Node2Angle& node2angle, V2L* v2l_id,
-                  L2V* l2v_id)
+void convertLanes(const VectorMap &vmap, lanelet::LaneletMapPtr &lmap, const Node2Angle &node2angle, V2L *v2l_id,
+                  L2V *l2v_id)
 {
   for (auto vmap_lane : vmap.findByFilter([](vector_map::Lane l) { return true; }))
   {
-    const auto& lanelet = createLanelet(vmap, vmap_lane.lnid, node2angle);
+    const auto &lanelet = createLanelet(vmap, vmap_lane.lnid, node2angle);
     lmap->add(lanelet);
     (*v2l_id)[vmap_lane.lnid] = lanelet.id();
     (*l2v_id)[lanelet.id()] = vmap_lane.lnid;
   }
 }
 
-double getAngleAverage(const std::vector<double>& angles)
+double getAngleAverage(const std::vector<double> &angles)
 {
   double sum_x, sum_y, avg_x, avg_y;
   sum_x = sum_y = avg_x = avg_y = 0;
@@ -152,7 +197,7 @@ double getAngleAverage(const std::vector<double>& angles)
   return std::atan2(avg_y, avg_x);
 }
 
-lanelet::Polygon3d convertToPolygon(const VectorMap& vmap, int area_id)
+lanelet::Polygon3d convertToPolygon(const VectorMap &vmap, int area_id)
 {
   auto area = vmap.findByKey(AreaKey(area_id));
   auto line = vmap.findByKey(LineKey(area.slid));
@@ -172,7 +217,7 @@ lanelet::Polygon3d convertToPolygon(const VectorMap& vmap, int area_id)
   return polygon;
 }
 
-double getLineLength(const VectorMap& vmap, int line_id)
+double getLineLength(const VectorMap &vmap, int line_id)
 {
   auto line = vmap.findByKey(LineKey(line_id));
   auto bp = vmap.findByKey(PointKey(line.bpid));
@@ -180,7 +225,7 @@ double getLineLength(const VectorMap& vmap, int line_id)
   return std::hypot(fp.ly - bp.ly, fp.bx - bp.bx);
 }
 
-double getLineAngle(const VectorMap& vmap, int line_id)
+double getLineAngle(const VectorMap &vmap, int line_id)
 {
   auto line = vmap.findByKey(LineKey(line_id));
   auto bp = vmap.findByKey(PointKey(line.bpid));
@@ -188,7 +233,7 @@ double getLineAngle(const VectorMap& vmap, int line_id)
   return std::atan2(fp.ly - bp.ly, fp.bx - bp.bx);
 }
 
-lanelet::LineString3d convertToLineString(const VectorMap& vmap, int line_id)
+lanelet::LineString3d convertToLineString(const VectorMap &vmap, int line_id)
 {
   auto line = vmap.findByKey(LineKey(line_id));
   auto bp = vmap.findByKey(PointKey(line.bpid));
@@ -197,11 +242,11 @@ lanelet::LineString3d convertToLineString(const VectorMap& vmap, int line_id)
   lanelet::Point3d p1(getId(), bp.bx, bp.ly, bp.h);
   lanelet::Point3d p2(getId(), fp.bx, fp.ly, fp.h);
 
-  return lanelet::LineString3d(getId(), { p1, p2 });
+  return lanelet::LineString3d(getId(), {p1, p2});
 }
 
-lanelet::LineString3d convertToLineString(const VectorMap& vmap, std::pair<int, int> straight_line,
-                                          std::unordered_set<long int>& done)
+lanelet::LineString3d convertToLineString(const VectorMap &vmap, std::pair<int, int> straight_line,
+                                          std::unordered_set<long int> &done)
 {
   auto line = vmap.findByKey(LineKey(straight_line.first));
   std::vector<lanelet::Point3d> points;
@@ -237,7 +282,7 @@ double angleDiff(double a1, double a2)
   return std::fabs(std::acos(a1_x * a2_x + a1_y * a2_y));
 }
 
-std::pair<int, int> combineStraightLines(const VectorMap& vmap, int lid)
+std::pair<int, int> combineStraightLines(const VectorMap &vmap, int lid)
 {
   auto line = vmap.findByKey(LineKey(lid));
 
@@ -281,7 +326,7 @@ std::pair<int, int> combineStraightLines(const VectorMap& vmap, int lid)
   return straight_line;
 }
 
-lanelet::Lanelet convertCrosswalkToLanelet(const VectorMap& vmap, int area_id)
+lanelet::Lanelet convertCrosswalkToLanelet(const VectorMap &vmap, int area_id)
 {
   auto area = vmap.findByKey(AreaKey(area_id));
 
@@ -341,12 +386,12 @@ lanelet::Lanelet convertCrosswalkToLanelet(const VectorMap& vmap, int area_id)
   return llt;
 }
 
-void addCrossWalks(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
+void addCrossWalks(const VectorMap &vmap, lanelet::LaneletMapPtr &lmap)
 {
   std::vector<lanelet::Lanelet> crosswalks;
   auto vmap_crosswalks = vmap.findByFilter([](vector_map::CrossWalk cr) { return true; });
 
-  for (const auto& cw : vmap_crosswalks)
+  for (const auto &cw : vmap_crosswalks)
   {
     if (cw.type != 0)
       continue;
@@ -358,13 +403,13 @@ void addCrossWalks(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
   }
 }
 
-void addIntersectionTags(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
+void addIntersectionTags(const VectorMap &vmap, lanelet::LaneletMapPtr &lmap)
 {
   std::vector<lanelet::Polygon3d> intersections;
   auto vmap_intersections = vmap.findByFilter([](vector_map::CrossWalk cr) { return true; });
   // auto vmap_intersections = vmap.findByFilter([](vector_map::CrossRoad cr) { return true; });
 
-  for (const auto& i : vmap_intersections)
+  for (const auto &i : vmap_intersections)
   {
     if (i.type != 0)
       continue;
@@ -374,10 +419,10 @@ void addIntersectionTags(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
     std::cout << poly << std::endl;
   }
 
-  for (auto& llt : lmap->laneletLayer)
+  for (auto &llt : lmap->laneletLayer)
   {
     auto llt_polygon2d = llt.polygon2d().basicPolygon();
-    for (const auto& intersection : intersections)
+    for (const auto &intersection : intersections)
     {
       auto intersection_polygon2d = lanelet::utils::to2D(intersection).basicPolygon();
       if (lanelet::geometry::distance(llt_polygon2d, intersection_polygon2d) < std::numeric_limits<double>::epsilon())
@@ -388,8 +433,8 @@ void addIntersectionTags(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
   }
 }
 
-bool getNextLanelet(const VectorMap& vmap, const lanelet::LaneletMapPtr& lmap, const V2L& v2l_id, const L2V& l2v_id,
-                    const lanelet::ConstLanelet llt, lanelet::ConstLanelet* next_llt)
+bool getNextLanelet(const VectorMap &vmap, const lanelet::LaneletMapPtr &lmap, const V2L &v2l_id, const L2V &l2v_id,
+                    const lanelet::ConstLanelet llt, lanelet::ConstLanelet *next_llt)
 {
   try
   {
@@ -412,7 +457,7 @@ bool getNextLanelet(const VectorMap& vmap, const lanelet::LaneletMapPtr& lmap, c
       return false;
     }
   }
-  catch (std::out_of_range& err)
+  catch (std::out_of_range &err)
   {
     std::cout << err.what() << std::endl;
     return false;
@@ -421,8 +466,8 @@ bool getNextLanelet(const VectorMap& vmap, const lanelet::LaneletMapPtr& lmap, c
   return true;
 }
 
-bool getPreviousLanelet(const VectorMap& vmap, const lanelet::LaneletMapPtr& lmap, const V2L& v2l_id, const L2V& l2v_id,
-                        const lanelet::ConstLanelet llt, lanelet::ConstLanelet* prev_llt)
+bool getPreviousLanelet(const VectorMap &vmap, const lanelet::LaneletMapPtr &lmap, const V2L &v2l_id, const L2V &l2v_id,
+                        const lanelet::ConstLanelet llt, lanelet::ConstLanelet *prev_llt)
 {
   try
   {
@@ -444,7 +489,7 @@ bool getPreviousLanelet(const VectorMap& vmap, const lanelet::LaneletMapPtr& lma
       return false;
     }
   }
-  catch (std::out_of_range& err)
+  catch (std::out_of_range &err)
   {
     std::cout << err.what() << std::endl;
     return false;
@@ -456,7 +501,7 @@ bool getPreviousLanelet(const VectorMap& vmap, const lanelet::LaneletMapPtr& lma
 lanelet::Lanelet combineLanelets(lanelet::Lanelets lanelets)
 {
   std::vector<lanelet::Point3d> left_points, right_points;
-  for (auto& llt : lanelets)
+  for (auto &llt : lanelets)
   {
     auto left_bound = llt.leftBound();
     auto right_bound = llt.rightBound();
@@ -489,14 +534,14 @@ lanelet::Lanelet combineLanelets(lanelet::Lanelets lanelets)
   return lanelet;
 }
 
-void connectLanelets(const VectorMap& vmap, const lanelet::LaneletMapPtr& lmap, const V2L& v2l_id, const L2V& l2v_id)
+void connectLanelets(const VectorMap &vmap, const lanelet::LaneletMapPtr &lmap, const V2L &v2l_id, const L2V &l2v_id)
 {
   std::vector<lanelet::Lanelets> lanelets_array;
   std::unordered_set<lanelet::Id> done;
 
   lanelet::LaneletMapPtr new_map(new lanelet::LaneletMap);
 
-  for (const auto& llt : lmap->laneletLayer)
+  for (const auto &llt : lmap->laneletLayer)
   {
     if (exists(done, llt.id()))
     {
@@ -538,7 +583,7 @@ void connectLanelets(const VectorMap& vmap, const lanelet::LaneletMapPtr& lmap, 
     lanelets_array.push_back(connected_lanelets);
   }
 
-  for (const auto& array : lanelets_array)
+  for (const auto &array : lanelets_array)
   {
     lanelet::Lanelet connected_lanelet = combineLanelets(array);
     connected_lanelet.attributes()["subtype"] = "road";
@@ -547,9 +592,9 @@ void connectLanelets(const VectorMap& vmap, const lanelet::LaneletMapPtr& lmap, 
   *lmap = std::move(*new_map);
 }
 
-void transformPoint(lanelet::LaneletMapPtr& lmap)
+void transformPoint(lanelet::LaneletMapPtr &lmap)
 {
-  for (auto& point : lmap->pointLayer)
+  for (auto &point : lmap->pointLayer)
   {
     double tmp_x = point.x();
     point.x() = point.y();
@@ -559,15 +604,15 @@ void transformPoint(lanelet::LaneletMapPtr& lmap)
   }
 }
 
-double getAngle(const lanelet::Point3d& p1, const lanelet::Point3d& p2)
+double getAngle(const lanelet::Point3d &p1, const lanelet::Point3d &p2)
 {
   return std::atan2(p2.y() - p1.y(), p2.x() - p1.x());
 }
 
-void SimplifyLineString(lanelet::LineString3d& line)
+void SimplifyLineString(lanelet::LineString3d &line)
 {
   std::vector<lanelet::Point3d> points;
-  for (auto& pt : line)
+  for (auto &pt : line)
   {
     points.push_back(pt);
   }
@@ -576,7 +621,7 @@ void SimplifyLineString(lanelet::LineString3d& line)
   auto prev_point = points.at(0);
   double prev_angle = 0;
   bool is_ready = true;
-  for (auto& pt : points)
+  for (auto &pt : points)
   {
     if (pt == prev_point)
       continue;
@@ -610,15 +655,15 @@ void SimplifyLineString(lanelet::LineString3d& line)
   line = new_line;
 }
 
-void SimplifyLineString(lanelet::LaneletMapPtr& lmap)
+void SimplifyLineString(lanelet::LaneletMapPtr &lmap)
 {
-  for (auto& line : lmap->lineStringLayer)
+  for (auto &line : lmap->lineStringLayer)
   {
     SimplifyLineString(line);
   }
 }
 
-lanelet::Point3d convertSignalToPoint(const VectorMap& vmap, int id)
+lanelet::Point3d convertSignalToPoint(const VectorMap &vmap, int id)
 {
   auto signal = vmap.findByKey(SignalKey(id));
   auto signal_vector = vmap.findByKey(VectorKey(signal.vid));
@@ -628,15 +673,15 @@ lanelet::Point3d convertSignalToPoint(const VectorMap& vmap, int id)
 
   switch (signal.type % 10)
   {
-    case 1:
-      pt.attributes()["color"] = "red";
-      break;
-    case 2:
-      pt.attributes()["color"] = "green";
-      break;
-    case 3:
-      pt.attributes()["color"] = "yellow";
-      break;
+  case 1:
+    pt.attributes()["color"] = "red";
+    break;
+  case 2:
+    pt.attributes()["color"] = "green";
+    break;
+  case 3:
+    pt.attributes()["color"] = "yellow";
+    break;
   }
 
   if (signal.type > 20)
@@ -656,7 +701,7 @@ lanelet::LineString3d getTrafficLightBase(const lanelet::LineString3d light_bulb
   bool found_green = false;
   bool found_red = false;
   double radius = 0.4;
-  for (const auto& pt : light_bulb)
+  for (const auto &pt : light_bulb)
   {
     if (pt.z() < min_height)
     {
@@ -704,16 +749,17 @@ lanelet::LineString3d getTrafficLightBase(const lanelet::LineString3d light_bulb
   p2.y() = pt_red.y() + direction.y() * radius;
   p2.z() = min_height - radius;
 
-  lanelet::LineString3d base_line(getId(), { p1, p2 });
+  lanelet::LineString3d base_line(getId(), {p1, p2});
   base_line.attributes()["height"] = max_height - min_height + radius * 2;
+  base_line.attributes()["type"] = "traffic_light";
   return base_line;
 }
 
-void addTrafficLights(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
+void addTrafficLights(const VectorMap &vmap, lanelet::LaneletMapPtr &lmap)
 {
   auto vmap_signals = vmap.findByFilter([](vector_map::Signal s) { return true; });
   std::unordered_set<long int> done;
-  for (const auto& signal : vmap_signals)
+  for (const auto &signal : vmap_signals)
   {
     if (signal.type > 3 && signal.type < 20)
     {
@@ -725,7 +771,7 @@ void addTrafficLights(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
     }
     const auto signals = vmap.findByFilter([signal](vector_map::Signal s) { return s.linkid == signal.linkid; });
     std::vector<lanelet::Point3d> points;
-    for (const auto& s : signals)
+    for (const auto &s : signals)
     {
       done.insert(s.id);
       lanelet::Point3d pt = convertSignalToPoint(vmap, s.id);
@@ -733,9 +779,9 @@ void addTrafficLights(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
     }
 
     const auto vmap_stoplines = vmap.findByFilter([signals](vector_map::StopLine l) {
-      for (const auto& s : signals)
+      for (const auto &s : signals)
       {
-        if (l.tlid == s.vid)
+        if (l.tlid == s.id)
           return true;
       }
       return false;
@@ -750,23 +796,23 @@ void addTrafficLights(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap)
       continue;
     }
     light_bulb.attributes()["traffic_light_id"] = base.id();
-    for (const auto& vmap_stopline : vmap_stoplines)
+    for (const auto &vmap_stopline : vmap_stoplines)
     {
       auto stop_line = convertToLineString(vmap, vmap_stopline.lid);
       stop_line.attributes()["type"] = "stop_line";
-      auto tl = lanelet::autoware::AutowareTrafficLight::make(getId(), lanelet::AttributeMap(), { base }, stop_line,
-                                                              { light_bulb });
+      auto tl = lanelet::autoware::AutowareTrafficLight::make(getId(), lanelet::AttributeMap(), {base}, stop_line,
+                                                              {light_bulb});
       lmap->add(tl);
       std::cout << "ADDED" << std::endl;
     }
     if (vmap_stoplines.empty())
     {
       lanelet::LineString3d stop_line;
-      auto tl = lanelet::autoware::AutowareTrafficLight::make(getId(), lanelet::AttributeMap(), { base }, stop_line,
-                                                              { light_bulb });
+      auto tl = lanelet::autoware::AutowareTrafficLight::make(getId(), lanelet::AttributeMap(), {base}, stop_line,
+                                                              {light_bulb});
       tl->removeStopLine();
       lmap->add(tl);
-      std::cout << "ADDED" << std::endl;
+      std::cout << "NO STOPLINE ADDED" << std::endl;
     }
   }
 }

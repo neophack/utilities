@@ -61,3 +61,5 @@ void SimplifyLineString(lanelet::LineString3d& line);
 
 
 void addTrafficLights(const VectorMap& vmap, lanelet::LaneletMapPtr& lmap);
+
+void combinePoints(lanelet::LaneletMapPtr& lmap);
